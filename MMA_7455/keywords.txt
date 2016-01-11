@@ -25,7 +25,9 @@ getSensitivity			KEYWORD2
 setMode					KEYWORD2
 getMode					KEYWORD2
 setSelfTest				KEYWORD2
+enableStrongDriveStrength	KEYWORD2
 enableDetectionXYZ		KEYWORD2
+setLowPassFilter		KEYWORD2
 setThresholdMode		KEYWORD2
 setLevelPolarity		KEYWORD2
 setLevelThresholdLimit	KEYWORD2

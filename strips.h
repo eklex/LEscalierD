@@ -6,9 +6,9 @@
 #include "MMA_7455.h"
 FASTLED_USING_NAMESPACE;
 
-#define RAINBOW
+#undef RAINBOW
 #define SERIAL_DEBUG
-#define ACC_PULL
+#undef ACC_PULL
 
 /* Number of strips */
 #define STRIP_CNT   (8)
@@ -25,6 +25,8 @@ FASTLED_USING_NAMESPACE;
 #define STRIP_7     (D5)
 #define STRIP_8     (D0)
 
+/* Accelerometer count */
+#define ACC_CNT     (2)
 /* Accelerometer #1 Chip Select */
 #define ACC_1_CS    (A2)
 /* Accelerometer #1 Interrupt */
@@ -35,8 +37,8 @@ FASTLED_USING_NAMESPACE;
 #define ACC_2_ISR   (A7)
 
 /* Display rules */
-#define TOP2BOTTOM  (1)
-#define BOTTOM2TOP  (-1)
+#define TOP2BOTTOM  (-1)
+#define BOTTOM2TOP  (1)
 
 typedef CRGB CRGB_p[LED_CNT];
 typedef void (*isr_func_t)(void);
@@ -109,30 +111,16 @@ typedef struct _cloudcmd_t
   int  argc;
 } cloudcmd_t;
 
-extern MMA_7455 acc1;
-extern volatile bool   acc1_pulse;
-extern volatile bool   led_pulse;
-extern bool     acc1_enable;
-extern MMA_7455 acc2;
-extern volatile bool   acc2_pulse;
-extern bool     acc2_enable;
+//extern          MMA_7455 acc[ACC_CNT];
+extern volatile bool     acc1_drdy;
+extern volatile bool     acc2_drdy;
+extern volatile uint8_t  acc_detect_flag;
+extern volatile uint8_t  acc_read_flag;
+extern          Timer    acc_timer;
+extern          Timer    bkgnd_timer;
 
-
-
-void acc1_isr_pulse(void);
-void acc2_isr_pulse(void);
-int acc_init(
-  MMA_7455 *acc,
-  MODE acc_mode,
-  PULSE_MODE pls_mode,
-  TH_MODE th_mode,
-  ISR_MODE isr_mode,
-  uint16_t isr_pin,
-  isr_func_t isr_func,
-  int16_t x_off = 0,
-  int16_t y_off = 0,
-  int16_t z_off = 0
-);
+int acc_setup(void);
+void acc_display(CRGB_p *pLeds, unsigned int strip_cnt, unsigned int led_cnt);
 
 void fadeIn(CRGB_p *pLeds, unsigned int strip_idx, unsigned int led_idx, CRGB color);
 void fadeOut(CRGB_p *pLeds, unsigned int strip_idx, unsigned int led_idx, CRGB color);
@@ -151,7 +139,7 @@ void openingStar(CRGB_p *pLeds, unsigned int strip_cnt, unsigned int led_cnt);
 void constellation(CRGB_p *pLeds, unsigned int strip_cnt, unsigned int led_cnt);
 void solidwhite(CRGB_p *pLeds, unsigned int strip_cnt, unsigned int led_cnt);
 void solidcolor(CRGB_p *pLeds, unsigned int strip_cnt, unsigned int led_cnt, CRGB color);
-void acc_display(CRGB_p *pLeds, unsigned int strip_cnt, unsigned int led_cnt);
+
 
 int setOpeningMode(String cmd);
 

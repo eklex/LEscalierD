@@ -179,10 +179,11 @@
 
 /* Control 1 */
 #define CTL1_OFF                (0x18)
-#define CTL1_XDA_DIS            (0x01 << 3)
-#define CTL1_YDA_DIS            (0x01 << 4)
-#define CTL1_ZDA_DIS            (0x01 << 5)
+#define CTL1_DFBW               (0x01 << 7)
 #define CTL1_THOPT              (0x01 << 6)
+#define CTL1_ZDA_DIS            (0x01 << 5)
+#define CTL1_YDA_DIS            (0x01 << 4)
+#define CTL1_XDA_DIS            (0x01 << 3)
 #define CTL1_INTRG_MASK         (0x03 << 1)
 #define CTL1_INTRG_LVL_PSL      (0x00 << 1)
 #define CTL1_INTRG_PSL_LVL      (0x01 << 1)
@@ -255,6 +256,13 @@ typedef enum _ISR_MODE
   pulse_pulse = CTL1_INTRG_PSL_PSL
 } ISR_MODE;
 
+/* Low pass filter bandwidth */
+typedef enum _LPF_BW
+{
+  lpf_62hz,
+  lpf_125hz,
+} LPF_BW;
+
 typedef enum _MMA7455_PROTOCOL
 {
   i2c_protocol,
@@ -277,8 +285,10 @@ class MMA_7455
     MODE    getMode(void);
     
     void    setSelfTest(bool enable);
-    
+    void    enableStrongDriveStrength(bool enable);
+
     void    enableDetectionXYZ(bool x, bool y, bool z);
+    void    setLowPassFilter(LPF_BW dfbw);
     void    setThresholdMode(TH_MODE mode);
     void    setThresholdMode(unsigned int mode);
     

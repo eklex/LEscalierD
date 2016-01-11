@@ -214,34 +214,3 @@ void constellation(CRGB_p *pLeds, unsigned int strip_cnt, unsigned int led_cnt)
   }
   FastLED.show();
 }
-
-void acc_display(CRGB_p *pLeds, unsigned int strip_cnt, unsigned int led_cnt)
-{
-  int strip_idx = 0;
-  int led_idx   = 0;
-  int16_t x, y, z;
-  uint32_t color;
-
-  for(strip_idx = 0; strip_idx < strip_cnt - 1; strip_idx++)
-  {
-    memset(pLeds[strip_idx], 0, led_cnt * sizeof(CRGB));
-  }
-
-  acc1.readAxis10(&x, &y, &z);
-
-#ifdef ghg //SERIAL_DEBUG
-  Serial.print("X: ");    Serial.print(x, DEC);
-  Serial.print("\tY: ");  Serial.print(y, DEC);
-  Serial.print("\tZ: ");  Serial.println(z, DEC);
-#endif
-  if(led_pulse)
-  {
-    color = random(0, 0xFFFFFF);
-    for(led_idx = 0; led_idx < led_cnt; led_idx++)  pLeds[7][led_idx] = color;
-    led_pulse = false;
-  }
-  for(led_idx = 0; led_idx < abs(x)%led_cnt; led_idx++)  pLeds[0][led_idx] = CRGB::White;
-  for(led_idx = 0; led_idx < abs(y)%led_cnt; led_idx++)  pLeds[1][led_idx] = CRGB::White;
-  for(led_idx = 0; led_idx < abs(z)%led_cnt; led_idx++)  pLeds[2][led_idx] = CRGB::White;
-  FastLED.show();
-}

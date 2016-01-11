@@ -257,6 +257,21 @@ void MMA_7455::setSelfTest(bool enable)
   return;
 }
 
+void MMA_7455::enableStrongDriveStrength(bool enable)
+{
+  uint8_t val = this->readReg(CTL2_OFF);
+  if(enable)
+  {
+    val |= CTL2_DRVO;
+  }
+  else
+  {
+    val &= ~CTL2_DRVO;
+  }
+  this->writeReg(CTL2_OFF, val);
+  return;
+}
+
 void MMA_7455::enableDetectionXYZ(bool x, bool y, bool z)
 {
   uint8_t val = this->readReg(CTL1_OFF);
@@ -270,6 +285,17 @@ void MMA_7455::enableDetectionXYZ(bool x, bool y, bool z)
   /* enable/disable detection on Z */
   if(z) val &= ~CTL1_ZDA_DIS;
   else  val |= CTL1_ZDA_DIS;
+
+  this->writeReg(CTL1_OFF, val);
+  return;
+}
+
+void MMA_7455::setLowPassFilter(LPF_BW dfbw)
+{
+  uint8_t val = this->readReg(CTL1_OFF);
+
+  if(dfbw == lpf_62hz)        val &= ~CTL1_DFBW;
+  else if(dfbw == lpf_125hz)  val |=  CTL1_DFBW;
 
   this->writeReg(CTL1_OFF, val);
   return;
