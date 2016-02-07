@@ -15,7 +15,7 @@ void setup()
 
 #ifdef SERIAL_DEBUG
   /* Set serial baud rate */
-  Serial.begin(9600);
+  Serial.begin(115200);
 #endif
 
   /* Initialize led arrays */
@@ -27,6 +27,7 @@ void setup()
   FastLED.addLeds<WS2812, STRIP_6, GRB>(leds[5], LED_CNT);
   FastLED.addLeds<WS2812, STRIP_7, GRB>(leds[6], LED_CNT);
   FastLED.addLeds<WS2812, STRIP_8, GRB>(leds[7], LED_CNT);
+  FastLED.show();
 
   do
   {
@@ -51,6 +52,10 @@ void setup()
   acc_timer.start();
 
   Particle.function("open", setOpeningMode);
+
+#ifdef SERIAL_DEBUG
+  Serial.println("Ready to rumbule!");
+#endif
 }
 
 void loop()
@@ -64,11 +69,11 @@ void loop()
     acc_read_flag = acc_detect_flag;
     /* Halt capture routine */
     acc_timer.stop();
-
+#if 0
     if(opening_temperature == true)
     {
       FastLED.setTemperature(Candle);
-      FastLED.setBrightness(50);
+      FastLED.setBrightness(10);
     }
     else
     {
@@ -101,12 +106,13 @@ void loop()
 
     if((opening_mode & 0xff) != 9 && (opening_mode & 0xff) != 11) fadeOutAll(leds_ptr, STRIP_CNT, LED_CNT);
     //if     (opening_mode & 0x100)            opening_mode = random(1, 10) | 0x100;
-
-    /* Restrat capture routine */
+#endif
+    delay(5000);
+    /* Restart capture routine */
     acc_timer.start();
 
   }
-  
+
   delay(500);
 
   /* Reset backed-up accelerometer status */
@@ -115,12 +121,20 @@ void loop()
     acc_read_flag = 0;
     iter = 0;
   }
-
-  /* Switch off all strips if not used every 10 min */
-  if(acc_read_flag == 0 && iter++ > 1200)
+  else
   {
-    solidcolor(leds_ptr, STRIP_CNT, LED_CNT, CRGB::Black);
-    FastLED.show();
-    iter = 0;
+    iter++;
+    /* Switch off all strips if not used every 1h */
+    if(iter > 7200) /* = prd_ms / 500 */
+    {
+      acc_timer.stop();
+      Serial.println("Reset to black");
+      solidcolor(leds_ptr, STRIP_CNT, LED_CNT, CRGB::Black);
+      FastLED.show();
+      iter = 0;
+      acc_timer.start();
+    }
   }
+
+
 }

@@ -23,7 +23,7 @@ volatile uint8_t acc_detect_flag = 0;
 volatile uint8_t acc_read_flag   = 0;
 
 /* Sofware timer for accelerometer capture */
-Timer acc_timer(4, acc_capture);
+Timer acc_timer(2, acc_capture, false);
 
 /* Accelerometer #1 Data Ready Interrupt */
 static void acc1_drdy_isr(void)
@@ -48,7 +48,8 @@ static int acc_init(
 
   /* Set strong drive strength for MISO */
   acc->enableStrongDriveStrength(true);
-
+  /* Set bandwidth to 125Hz */
+  acc->setLowPassFilter(lpf_125hz);
   /* Set accelerometer sensibility */
   acc->setSensitivity(2);
   if(acc->getSensitivity() != 2) return -1;
@@ -70,10 +71,24 @@ static int acc_init(
 
 static void acc_capture()
 {
-  static int8_t z_new[ACC_CNT] = {0};
-  static int8_t z_old[ACC_CNT] = {0};
-  static float  avgf[ACC_CNT]  = {0};
-  static int8_t avg8[ACC_CNT]  = {0};
+  static const float movavg_rc = 0.01;
+  static const float lpf_rc = 0.5;
+
+  static struct
+  {
+    int8_t value;
+    float newf;
+    float oldf;
+    float avg;
+    float lpf;
+  } acc_cap[ACC_CNT];
+#if 0
+  static int8_t  z_new[ACC_CNT] = {0};
+  static int8_t  z_old[ACC_CNT] = {0};
+  static float   avgf[ACC_CNT]  = {0};
+  static int8_t  avg8[ACC_CNT]  = {0};
+#endif
+  static uint8_t drdy_timeout[ACC_CNT] = {0};
   volatile bool *acc_drdy      = NULL;
   uint8_t acc_idx;
 
@@ -91,26 +106,58 @@ static void acc_capture()
 
     if(acc_drdy != NULL && *acc_drdy == true)
     {
-      z_new[acc_idx] = acc[acc_idx].readAxis8('z');
+      acc_cap[acc_idx].value = acc[acc_idx].readAxis8('z');
       *acc_drdy = false;
 
       /* Sanity check to avoid invalid value */
-      if((uint8_t)z_new[acc_idx] == 0x00 ||
-         (uint8_t)z_new[acc_idx] == 0x7F ||
-         (uint8_t)z_new[acc_idx] == 0x80) return;
+      if((uint8_t)acc_cap[acc_idx].value == 0x00 ||
+         (uint8_t)acc_cap[acc_idx].value == 0x7F ||
+         (uint8_t)acc_cap[acc_idx].value == 0x80) return;
 
-      /* Calculate moving average */
-      avgf[acc_idx] = 0.01*(float)z_new[acc_idx] + 0.99*avgf[acc_idx];
-      avg8[acc_idx] = (int8_t)avgf[acc_idx];
+        /* Calculate the moving average */
+      acc_cap[acc_idx].avg = movavg_rc*(float)acc_cap[acc_idx].value +
+                            (1 - movavg_rc)*acc_cap[acc_idx].avg;
+      /* Low-pass filter */
+      acc_cap[acc_idx].lpf = lpf_rc*(float)acc_cap[acc_idx].value +
+                            (1 - lpf_rc)*acc_cap[acc_idx].oldf;
+      /* Cap value if too close to moving average */
+      acc_cap[acc_idx].newf =
+        (acc_cap[acc_idx].lpf < acc_cap[acc_idx].avg + 1.0 &&
+         acc_cap[acc_idx].lpf > acc_cap[acc_idx].avg - 1.0) ?
+         acc_cap[acc_idx].avg : acc_cap[acc_idx].lpf;
 
       /* Detect step */
-      if(z_new[acc_idx] <= avg8[acc_idx]-4 &&
-         z_old[acc_idx] >= avg8[acc_idx]+2 &&
-         z_old[acc_idx]-z_new[acc_idx] >= 6)
+      if(acc_cap[acc_idx].newf <= acc_cap[acc_idx].avg - 1.5 &&
+         acc_cap[acc_idx].oldf >= acc_cap[acc_idx].avg + 1.5 &&
+         acc_cap[acc_idx].oldf - acc_cap[acc_idx].newf >= 4)
       {
         acc_detect_flag |= (1 << acc_idx);
+        Serial.print("Detected on Acc#"); Serial.println(acc_idx);
+        Serial.print(acc_cap[acc_idx].oldf, DEC); Serial.print(" ");
+        Serial.print(acc_cap[acc_idx].newf, DEC); Serial.print(" ");
+        Serial.println(acc_cap[acc_idx].avg, DEC);
       }
-      z_old[acc_idx] = z_new[acc_idx];
+      acc_cap[acc_idx].oldf = acc_cap[acc_idx].newf;
+      drdy_timeout[acc_idx] = 0;
+    }
+    else if(acc_drdy != NULL)
+    {
+      drdy_timeout[acc_idx]++;
+      if(drdy_timeout[acc_idx] > 128)
+      {
+        drdy_timeout[acc_idx] = 0;
+        if(acc[acc_idx].readReg(WHOAMI_OFF) == 0x55)
+        {
+          Serial.print("ISR hung on Acc#"); Serial.println(acc_idx);
+          acc[acc_idx].readAxis8('z');
+          *acc_drdy = false;
+        }
+        else
+        {
+          Serial.print("Error on Acc#");
+          Serial.println(acc_idx);
+        }
+      }
     }
   }
 }
