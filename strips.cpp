@@ -11,6 +11,8 @@ void setup()
   int acc_error = 0;
   uint8_t acc_strip = 0;
 
+  capture_timer.stop();
+
   delay(5000);
 
 #ifdef SERIAL_DEBUG
@@ -49,13 +51,12 @@ void setup()
     }
   } while(acc_error != 0);
 
-  acc_timer.start();
-
   Particle.function("open", setOpeningMode);
 
 #ifdef SERIAL_DEBUG
   Serial.println("Ready to rumbule!");
 #endif
+  capture_timer.start();
 }
 
 void loop()
@@ -65,11 +66,9 @@ void loop()
 
   if(acc_detect_flag)
   {
-    /* Save accelerometer status  */
-    acc_read_flag = acc_detect_flag;
     /* Halt capture routine */
-    acc_timer.stop();
-#if 0
+    capture_timer.stop();
+#if 1
     if(opening_temperature == true)
     {
       FastLED.setTemperature(Candle);
@@ -85,16 +84,16 @@ void loop()
     if     ((opening_mode & 0xff) == 0)     solidcolor(leds_ptr, STRIP_CNT, LED_CNT, CRGB::Black);
     else if((opening_mode & 0xff) == 1)     solidcolor(leds_ptr, STRIP_CNT, LED_CNT, (CRGB)opening_color);
     else if((opening_mode & 0xff) == 2) {
-      if     (acc_read_flag & (1 << 1))     openingEpic(leds_ptr, STRIP_CNT, LED_CNT, TOP2BOTTOM);
-      else if(acc_read_flag & (1 << 0))     openingEpic(leds_ptr, STRIP_CNT, LED_CNT, BOTTOM2TOP);
+      if     (acc_detect_flag & (1 << 1))     openingEpic(leds_ptr, STRIP_CNT, LED_CNT, TOP2BOTTOM);
+      else if(acc_detect_flag & (1 << 0))     openingEpic(leds_ptr, STRIP_CNT, LED_CNT, BOTTOM2TOP);
     }
     else if((opening_mode & 0xff) == 4) {
-      if     (acc_read_flag & (1 << 1))     openingCenter(leds_ptr, STRIP_CNT, LED_CNT, TOP2BOTTOM);
-      else if(acc_read_flag & (1 << 0))     openingCenter(leds_ptr, STRIP_CNT, LED_CNT, BOTTOM2TOP);
+      if     (acc_detect_flag & (1 << 1))     openingCenter(leds_ptr, STRIP_CNT, LED_CNT, TOP2BOTTOM);
+      else if(acc_detect_flag & (1 << 0))     openingCenter(leds_ptr, STRIP_CNT, LED_CNT, BOTTOM2TOP);
     }
     else if((opening_mode & 0xff) == 6) {
-      if     (acc_read_flag & (1 << 1))     openingCone(leds_ptr, STRIP_CNT, LED_CNT, TOP2BOTTOM);
-      else if(acc_read_flag & (1 << 0))     openingCone(leds_ptr, STRIP_CNT, LED_CNT, BOTTOM2TOP);
+      if     (acc_detect_flag & (1 << 1))     openingCone(leds_ptr, STRIP_CNT, LED_CNT, TOP2BOTTOM);
+      else if(acc_detect_flag & (1 << 0))     openingCone(leds_ptr, STRIP_CNT, LED_CNT, BOTTOM2TOP);
     }
     else if((opening_mode & 0xff) == 8)     openingStar(leds_ptr, STRIP_CNT, LED_CNT);
     //else if((opening_mode & 0xff) == 9)      constellation(leds_ptr, STRIP_CNT, LED_CNT);
@@ -107,14 +106,19 @@ void loop()
     if((opening_mode & 0xff) != 9 && (opening_mode & 0xff) != 11) fadeOutAll(leds_ptr, STRIP_CNT, LED_CNT);
     //if     (opening_mode & 0x100)            opening_mode = random(1, 10) | 0x100;
 #endif
-    delay(5000);
+    Serial.println("Stop capture");
+    //delay(10000);
     /* Restart capture routine */
-    acc_timer.start();
+    acc_reset();
+    /* Reset accelerometer detect flag  */
+    acc_detect_flag = 0;
+    Serial.println("Start capture");
+    capture_timer.start();
 
   }
 
   delay(500);
-
+#if 0
   /* Reset backed-up accelerometer status */
   if(acc_read_flag)
   {
@@ -135,6 +139,6 @@ void loop()
       acc_timer.start();
     }
   }
-
+#endif
 
 }

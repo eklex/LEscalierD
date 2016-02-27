@@ -7,7 +7,7 @@
 FASTLED_USING_NAMESPACE;
 
 #undef RAINBOW
-#define SERIAL_DEBUG
+#undef SERIAL_DEBUG
 #undef ACC_PULL
 
 /* Number of strips */
@@ -29,22 +29,26 @@ FASTLED_USING_NAMESPACE;
 #define ACC_CNT     (2)
 /* Accelerometer #1 Chip Select */
 #define ACC_1_CS    (A2)
-/* Accelerometer #1 Interrupt */
-#define ACC_1_ISR   (A6)
+/* Accelerometer #1 Data Ready */
+#define ACC_1_DRDY  (A6)
 /* Accelerometer #2 Chip Select */
 #define ACC_2_CS    (A1)
-/* Accelerometer #2 Interrupt */
-#define ACC_2_ISR   (A7)
+/* Accelerometer #2 Data Ready */
+#define ACC_2_DRDY  (A7)
 
 /* Display rules */
 #define TOP2BOTTOM  (-1)
 #define BOTTOM2TOP  (1)
 
+static const int   delta = 1;
+static const float th = 3.5;
+static const int   w = 100;
+static const int   N = 50;
+
 typedef CRGB CRGB_p[LED_CNT];
-typedef void (*isr_func_t)(void);
+//typedef void (*isr_func_t)(void);
 typedef void (*led_func_wo_t)(CRGB_p*, unsigned int, unsigned int, int);
 typedef void (*led_func_no_t)(CRGB_p*, unsigned int, unsigned int);
-
 
 extern uint16_t opening_mode;
 extern uint32_t opening_color;
@@ -57,6 +61,30 @@ extern bool     opening_temperature;
 #define SUPP_ORDER      (1 << 3)
 #define RAND_EN         (1 << 0)
 #define RAND_ONCE       (1 << 1)
+
+typedef struct _acc_detect_t {
+  int          sample_buff[w + delta];
+  float        cov_buff[N];
+  int          sum_sample_last;
+  int          sum_sample_delta;
+  int          sum_sample_prod;
+  float        sum_cov_sqrt;
+  unsigned int sample_idx;
+  unsigned int sample_last_idx;
+  unsigned int sample_delta_idx;
+  unsigned int cov_idx;
+  float        threshold;
+  bool         initialized;
+} acc_detect_t;
+
+typedef struct _acc_bundle_t {
+    MMA_7455     *device;
+    acc_detect_t  detect;
+    bool          initialized;
+    int           pin_drdy;
+    uint16_t      timeout_drdy;
+} acc_bundle_t;
+
 
 typedef struct _light_mode_t
 {
@@ -85,7 +113,7 @@ typedef struct _light_mode_t
     uint32_t value:24;
   } color;
 } light_mode_t;
-
+#if 0
 typedef struct _trigger_mode_t
 {
   uint32_t timer_timeout;
@@ -110,16 +138,17 @@ typedef struct _cloudcmd_t
   char **argv;
   int  argc;
 } cloudcmd_t;
-
+#endif
 //extern          MMA_7455 acc[ACC_CNT];
-extern volatile bool     acc1_drdy;
-extern volatile bool     acc2_drdy;
+//extern volatile bool     acc1_drdy;
+//extern volatile bool     acc2_drdy;
 extern volatile uint8_t  acc_detect_flag;
-extern volatile uint8_t  acc_read_flag;
-extern          Timer    acc_timer;
-extern          Timer    bkgnd_timer;
+//extern volatile uint8_t  acc_read_flag;
+extern          Timer    capture_timer;
+//extern          Timer    bkgnd_timer;
 
-int acc_setup(void);
+int  acc_setup(void);
+void acc_reset(void);
 void acc_display(CRGB_p *pLeds, unsigned int strip_cnt, unsigned int led_cnt);
 
 void fadeIn(CRGB_p *pLeds, unsigned int strip_idx, unsigned int led_idx, CRGB color);
@@ -139,7 +168,6 @@ void openingStar(CRGB_p *pLeds, unsigned int strip_cnt, unsigned int led_cnt);
 void constellation(CRGB_p *pLeds, unsigned int strip_cnt, unsigned int led_cnt);
 void solidwhite(CRGB_p *pLeds, unsigned int strip_cnt, unsigned int led_cnt);
 void solidcolor(CRGB_p *pLeds, unsigned int strip_cnt, unsigned int led_cnt, CRGB color);
-
 
 int setOpeningMode(String cmd);
 

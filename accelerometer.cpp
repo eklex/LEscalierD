@@ -3,197 +3,273 @@
 /**
  * Define private prototypes
  */
-static void acc1_drdy_isr(void);
-static void acc2_drdy_isr(void);
-static int  acc_init(MMA_7455*, uint16_t, isr_func_t);
+static int  acc_init_device(acc_bundle_t*, MMA_7455*, uint16_t);
+static void acc_init_detect(acc_detect_t*, float);
 static void acc_capture(void);
+static int  process_sample(acc_detect_t*, int);
 
-/* Accelerometers strctures */
-static MMA_7455 acc[ACC_CNT] = {
+/* Accelerometers structures */
+static MMA_7455 acc_device[ACC_CNT] = {
   MMA_7455(spi_protocol, ACC_1_CS),
   MMA_7455(spi_protocol, ACC_2_CS)
 };
+static acc_bundle_t acc[ACC_CNT];
 
-/* Data Ready flag */
-volatile bool acc1_drdy = true;
-volatile bool acc2_drdy = true;
-/* flag modified by timer routine */
+/* Detect flag */
 volatile uint8_t acc_detect_flag = 0;
-/* flag modified by main routine */
-volatile uint8_t acc_read_flag   = 0;
 
 /* Sofware timer for accelerometer capture */
-Timer acc_timer(2, acc_capture, false);
+Timer capture_timer(2, acc_capture, false);
 
-/* Accelerometer #1 Data Ready Interrupt */
-static void acc1_drdy_isr(void)
-{
-  if(!acc1_drdy) acc1_drdy = true;
-}
-
-/* Accelerometer #2 Data Ready Interrupt */
-static void acc2_drdy_isr(void)
-{
-  if(!acc2_drdy) acc2_drdy = true;
-}
-
-static int acc_init(
-  MMA_7455 *acc,
-  uint16_t isr_pin,
-  isr_func_t isr_func
+static int acc_init_device(
+  acc_bundle_t *acc,
+  MMA_7455 *device,
+  uint16_t pin_drdy
   )
 {
+  /* Initialize main structure */
+  acc->device = device;
+  acc->pin_drdy = pin_drdy;
+
   /* Start accelerometer */
-  acc->begin();
+  acc->device->begin();
 
   /* Set strong drive strength for MISO */
-  acc->enableStrongDriveStrength(true);
+  acc->device->enableStrongDriveStrength(true);
+
   /* Set bandwidth to 125Hz */
-  acc->setLowPassFilter(lpf_125hz);
+  acc->device->setLowPassFilter(lpf_125hz);
+
   /* Set accelerometer sensibility */
-  acc->setSensitivity(2);
-  if(acc->getSensitivity() != 2) return -1;
+  acc->device->setSensitivity(2);
+  if(acc->device->getSensitivity() != 2) return -1;
 
   /* Set accelerometer mode */
-  acc->setMode(measure);
-  if(acc->getMode() != measure)  return -2;
+  acc->device->setMode(measure);
+  if(acc->device->getMode() != measure)  return -2;
 
   /* Enable DRDY pin */
   /* Note: This function enables pin DRDY and disables pin INT1 */
-  acc->enableInterruptPins(false);
-  /* Set interrupt pin */
-  pinMode(isr_pin, INPUT);
-  /* Attach interrupt function */
-  attachInterrupt(isr_pin, isr_func, RISING);
+  acc->device->enableInterruptPins(false);
+  /* Set data ready pin */
+  pinMode(acc->pin_drdy, INPUT);
 
   return 0;
 }
 
-static void acc_capture()
+static void acc_init_detect(acc_detect_t *acc, float threshold)
 {
-  static const float movavg_rc = 0.01;
-  static const float lpf_rc = 0.5;
+  unsigned int i;
 
-  static struct
-  {
-    int8_t value;
-    float newf;
-    float oldf;
-    float avg;
-    float lpf;
-  } acc_cap[ACC_CNT];
-#if 0
-  static int8_t  z_new[ACC_CNT] = {0};
-  static int8_t  z_old[ACC_CNT] = {0};
-  static float   avgf[ACC_CNT]  = {0};
-  static int8_t  avg8[ACC_CNT]  = {0};
-#endif
-  static uint8_t drdy_timeout[ACC_CNT] = {0};
-  volatile bool *acc_drdy      = NULL;
-  uint8_t acc_idx;
+  for(i = 0; i < w + delta; i++) acc->sample_buff[i] = 0;
+  for(i = 0; i < N; i++)         acc->cov_buff[i]    = 0;
 
-  /* reset detect flag when it has been read */
-  acc_detect_flag &= ~acc_read_flag;
-
-  for(acc_idx = 0; acc_idx < ACC_CNT; acc_idx++)
-  {
-    switch(acc_idx)
-    {
-      case 0:  acc_drdy = &acc1_drdy; break;
-      case 1:  acc_drdy = &acc2_drdy; break;
-      default: acc_drdy = NULL;       break;
-    }
-
-    if(acc_drdy != NULL && *acc_drdy == true)
-    {
-      acc_cap[acc_idx].value = acc[acc_idx].readAxis8('z');
-      *acc_drdy = false;
-
-      /* Sanity check to avoid invalid value */
-      if((uint8_t)acc_cap[acc_idx].value == 0x00 ||
-         (uint8_t)acc_cap[acc_idx].value == 0x7F ||
-         (uint8_t)acc_cap[acc_idx].value == 0x80) return;
-
-        /* Calculate the moving average */
-      acc_cap[acc_idx].avg = movavg_rc*(float)acc_cap[acc_idx].value +
-                            (1 - movavg_rc)*acc_cap[acc_idx].avg;
-      /* Low-pass filter */
-      acc_cap[acc_idx].lpf = lpf_rc*(float)acc_cap[acc_idx].value +
-                            (1 - lpf_rc)*acc_cap[acc_idx].oldf;
-      /* Cap value if too close to moving average */
-      acc_cap[acc_idx].newf =
-        (acc_cap[acc_idx].lpf < acc_cap[acc_idx].avg + 1.0 &&
-         acc_cap[acc_idx].lpf > acc_cap[acc_idx].avg - 1.0) ?
-         acc_cap[acc_idx].avg : acc_cap[acc_idx].lpf;
-
-      /* Detect step */
-      if(acc_cap[acc_idx].newf <= acc_cap[acc_idx].avg - 1.5 &&
-         acc_cap[acc_idx].oldf >= acc_cap[acc_idx].avg + 1.5 &&
-         acc_cap[acc_idx].oldf - acc_cap[acc_idx].newf >= 4)
-      {
-        acc_detect_flag |= (1 << acc_idx);
-        Serial.print("Detected on Acc#"); Serial.println(acc_idx);
-        Serial.print(acc_cap[acc_idx].oldf, DEC); Serial.print(" ");
-        Serial.print(acc_cap[acc_idx].newf, DEC); Serial.print(" ");
-        Serial.println(acc_cap[acc_idx].avg, DEC);
-      }
-      acc_cap[acc_idx].oldf = acc_cap[acc_idx].newf;
-      drdy_timeout[acc_idx] = 0;
-    }
-    else if(acc_drdy != NULL)
-    {
-      drdy_timeout[acc_idx]++;
-      if(drdy_timeout[acc_idx] > 128)
-      {
-        drdy_timeout[acc_idx] = 0;
-        if(acc[acc_idx].readReg(WHOAMI_OFF) == 0x55)
-        {
-          Serial.print("ISR hung on Acc#"); Serial.println(acc_idx);
-          acc[acc_idx].readAxis8('z');
-          *acc_drdy = false;
-        }
-        else
-        {
-          Serial.print("Error on Acc#");
-          Serial.println(acc_idx);
-        }
-      }
-    }
-  }
+  acc->sum_sample_last  = 0;
+  acc->sum_sample_delta = 0;
+  acc->sum_sample_prod  = 0;
+  acc->sum_cov_sqrt     = 0;
+  acc->sample_idx       = 0;
+  acc->sample_last_idx  = delta;
+  acc->sample_delta_idx = 0;
+  acc->cov_idx          = 0;
+  acc->threshold        = threshold;
+  acc->initialized      = false;
 }
 
 int acc_setup(void)
 {
   int error = 0;
 
+  acc[0].initialized  = false;
+  acc[0].timeout_drdy = 0;
+  acc[1].initialized  = false;
+  acc[1].timeout_drdy = 0;
+
+  /* Initialize accelerometer detect structure */
+  acc_init_detect(&acc[0].detect, th);
+  acc_init_detect(&acc[1].detect, th);
+
   /* Initialize accelerometer #1 */
-  error = acc_init(&acc[0], ACC_1_ISR, acc1_drdy_isr);
+  error = acc_init_device(&acc[0], &acc_device[0], ACC_1_DRDY);
   if(error != 0)
   {
 #ifdef SERIAL_DEBUG
     Serial.print("Error initializing Accelerometer #1\n");
     Serial.print("Expected : Read\n");
-    Serial.print("55 : "); Serial.println(acc[0].readReg(WHOAMI_OFF), HEX);
-    Serial.print("1D : "); Serial.println(acc[0].readReg(I2CAD_OFF),  HEX);
-    Serial.print("AA : "); Serial.println(acc[0].readReg(USRINF_OFF), HEX);
+    Serial.print("55 : "); Serial.println(acc[0].device->readReg(WHOAMI_OFF), HEX);
+    Serial.print("1D : "); Serial.println(acc[0].device->readReg(I2CAD_OFF),  HEX);
+    Serial.print("AA : "); Serial.println(acc[0].device->readReg(USRINF_OFF), HEX);
 #endif
     return -1;
   }
+  acc[0].initialized = true;
 
   /* Initialize accelerometer #2 */
-  error = acc_init(&acc[1], ACC_2_ISR, acc2_drdy_isr);
+  error = acc_init_device(&acc[1], &acc_device[1], ACC_2_DRDY);
   if(error != 0)
   {
 #ifdef SERIAL_DEBUG
     Serial.print("Error initializing Accelerometer #2\n");
     Serial.print("Expected : Read\n");
-    Serial.print("55 : "); Serial.println(acc[0].readReg(WHOAMI_OFF), HEX);
-    Serial.print("1D : "); Serial.println(acc[0].readReg(I2CAD_OFF),  HEX);
-    Serial.print("AA : "); Serial.println(acc[0].readReg(USRINF_OFF), HEX);
+    Serial.print("55 : "); Serial.println(acc[0].device->readReg(WHOAMI_OFF), HEX);
+    Serial.print("1D : "); Serial.println(acc[0].device->readReg(I2CAD_OFF),  HEX);
+    Serial.print("AA : "); Serial.println(acc[0].device->readReg(USRINF_OFF), HEX);
 #endif
     return -2;
   }
+  acc[1].initialized = true;
 
+  return 0;
+}
+
+static void acc_capture(void)
+{
+  static uint8_t acc_idx  = 0;
+         int8_t  z_sample = 0;
+         int8_t  detected = 0;
+         int     acc_drdy = 0;
+
+  /* Look at the data ready flag,
+   * according to the current acc index */
+  switch(acc_idx)
+  {
+    case 0:
+    case 1:
+      if(acc[acc_idx].initialized == false)
+      {
+        /* ignore capture
+         * if accelerometer initialization did not run */
+        return;
+      }
+      acc_drdy = pinReadFast(acc[acc_idx].pin_drdy);
+      break;
+    default:
+      /* Invalid accelerometer */
+      acc_drdy = 0;
+      /* Reset index */
+      acc_idx = 0;
+      return;
+      break;
+  }
+
+  /* Data ready for selected acc */
+  if(acc_drdy == HIGH)
+  {
+    z_sample = acc[acc_idx].device->readAxis8('z');
+    detected = process_sample(&acc[acc_idx].detect, z_sample);
+    if(detected == 1)
+    {
+      acc_detect_flag |= (1 << acc_idx);
+      //Serial.print("Detected on Acc#"); Serial.println(acc_idx);
+    }
+    /* Reset data ready timeout */
+    acc[acc_idx].timeout_drdy = 0;
+  }
+  /**
+   * Data not ready
+   * When the data is not ready, the accelerometer can be stuck
+   * or the interrupt was missed. So if the interrupt does not
+   * happend after 750 checks (3 sec), we make sure ID register
+   * is still valid, and we read the axis register to reset
+   * the data ready interrupt.
+   */
+  else
+  {
+    acc[acc_idx].timeout_drdy++;
+    if(acc[acc_idx].timeout_drdy > 750) /* 1 check = 4ms */
+    {
+      /* Reset timeout counter */
+      acc[acc_idx].timeout_drdy = 0;
+
+      Serial.print("Data ready timeout on Acc#"); Serial.println(acc_idx);
+      acc_drdy = acc_init_device(&acc[acc_idx],
+                                 acc[acc_idx].device,
+                                 acc[acc_idx].pin_drdy);
+      if(acc_drdy != 0 ||
+         acc[acc_idx].device->readReg(WHOAMI_OFF) != 0x55)
+      {
+        Serial.print("Hardware error on Acc#"); Serial.println(acc_idx);
+      }
+    }
+  }
+  /* Increase accelerometer index */
+  acc_idx = (acc_idx + 1) % ACC_CNT;
+  return;
+}
+
+static int process_sample(acc_detect_t *acc, int sample_last)
+{
+  unsigned int i;
+  int sample_last_oldest, sample_delta_oldest;
+  int sample_delta;
+  float cov, out;
+  char buff[100];
+
+  if(sample_last >= 0 || sample_last < -95) return -2;
+
+  if(acc->initialized == false)
+  {
+    acc->sample_buff[acc->sample_idx] = sample_last;
+
+    if(acc->sample_idx >= delta)
+    {
+      acc->sum_sample_delta += acc->sample_buff[acc->sample_idx - delta];
+      acc->sum_sample_last  += acc->sample_buff[acc->sample_idx];
+      acc->sum_sample_prod  += acc->sample_buff[acc->sample_idx] *
+                               acc->sample_buff[acc->sample_idx - delta];
+    }
+
+    acc->sample_idx++;
+    if(acc->sample_idx >= w + delta)
+    {
+      acc->sample_idx  = w + delta - 1;
+      acc->initialized = true;
+    }
+    return -1;
+  }
+
+  sample_last_oldest  = acc->sample_buff[acc->sample_last_idx];
+  sample_delta_oldest = acc->sample_buff[acc->sample_delta_idx];
+  acc->sum_sample_last  -= sample_last_oldest;
+  acc->sum_sample_delta -= sample_delta_oldest;
+  acc->sum_sample_prod  -= sample_last_oldest*sample_delta_oldest;
+  sample_delta = acc->sample_buff[acc->sample_idx];
+  acc->sample_idx = (acc->sample_idx + 1) % (w + delta);
+
+  acc->sample_buff[acc->sample_idx] = sample_last;
+  acc->sum_sample_last += sample_last;
+  acc->sum_sample_delta += sample_delta;
+  acc->sum_sample_prod += sample_last*sample_delta;
+  cov = (float)((float)acc->sum_sample_prod/w) -
+        (float)((float)(acc->sum_sample_last*acc->sum_sample_delta)/(w*w));
+
+  acc->sum_cov_sqrt += cov * cov;
+  acc->sum_cov_sqrt -= acc->cov_buff[acc->cov_idx] * acc->cov_buff[acc->cov_idx];
+  acc->cov_buff[acc->cov_idx] = cov;
+
+  acc->sample_last_idx = (acc->sample_last_idx + 1) % (w + delta);
+  acc->sample_delta_idx = (acc->sample_delta_idx + 1) % (w + delta);
+  acc->cov_idx = (acc->cov_idx + 1) % N;
+
+  out = acc->sum_cov_sqrt / N;
+#if 0
+  sprintf(buff, ";%x;%d;",
+          (uint32_t)acc,
+          acc->sample_buff[acc->sample_idx]);
+  Serial.print(buff);
+  Serial.print(out); Serial.print(";\n");
+#endif
+  if(out > acc->threshold) {
+    sprintf(buff, ";%x;%d;",
+            (uint32_t)acc,
+            acc->sample_buff[acc->sample_idx]);
+    Serial.print(buff);
+    Serial.print(out); Serial.print(";\n");
+    //init_acc_detect (acc, acc->threshold);
+    //Serial.print("1;\n");
+    return 1;
+  }
+  //Serial.print("0;\n");
   return 0;
 }
 
@@ -209,14 +285,14 @@ void acc_display(CRGB_p *pLeds, unsigned int strip_cnt, unsigned int led_cnt)
     memset(pLeds[strip_idx], 0, led_cnt * sizeof(CRGB));
   }
 
-  acc[0].readAxis10(&x, &y, &z);
+  acc[0].device->readAxis10(&x, &y, &z);
 
 #ifdef SERIAL_DEBUG
   Serial.print("X: ");    Serial.print(x, DEC);
   Serial.print("\tY: ");  Serial.print(y, DEC);
   Serial.print("\tZ: ");  Serial.println(z, DEC);
 #endif
-  if(acc_read_flag)
+  if(acc_detect_flag)
   {
     color = random(0, 0xFFFFFF);
     for(led_idx = 0; led_idx < led_cnt; led_idx++)  pLeds[7][led_idx] = color;
@@ -225,4 +301,10 @@ void acc_display(CRGB_p *pLeds, unsigned int strip_cnt, unsigned int led_cnt)
   for(led_idx = 0; led_idx < abs(y)%led_cnt; led_idx++)  pLeds[1][led_idx] = CRGB::White;
   for(led_idx = 0; led_idx < abs(z)%led_cnt; led_idx++)  pLeds[2][led_idx] = CRGB::White;
   FastLED.show();
+}
+
+void acc_reset(void)
+{
+  acc_init_detect(&acc[0].detect, acc[0].detect.threshold);
+  acc_init_detect(&acc[1].detect, acc[1].detect.threshold);
 }
