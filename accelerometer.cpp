@@ -1,5 +1,56 @@
-#include "strips.h"
 #include "accelerometer.h"
+#include "MMA_7455.h"
+
+/* Debug token */
+#undef ACC_DEBUG
+
+/**
+ * Define hardware specs
+ */
+/* Accelerometer count */
+#define ACC_CNT     (2)
+/* Accelerometer #1 Chip Select */
+#define ACC_1_CS    (A2)
+/* Accelerometer #1 Data Ready */
+#define ACC_1_DRDY  (A6)
+/* Accelerometer #2 Chip Select */
+#define ACC_2_CS    (A1)
+/* Accelerometer #2 Data Ready */
+#define ACC_2_DRDY  (A7)
+
+/**
+ * Auto-covariance constants
+ */
+static const int   delta = 1;
+static const float th    = 3.5;
+static const int   w     = 100;
+static const int   N     = 50;
+
+/**
+ * Define private structures
+ */
+typedef struct _acc_detect_t {
+  int          sample_buff[w + delta];
+  float        cov_buff[N];
+  int          sum_sample_last;
+  int          sum_sample_delta;
+  int          sum_sample_prod;
+  float        sum_cov_sqrt;
+  unsigned int sample_idx;
+  unsigned int sample_last_idx;
+  unsigned int sample_delta_idx;
+  unsigned int cov_idx;
+  float        threshold;
+  bool         initialized;
+} acc_detect_t;
+
+typedef struct _acc_bundle_t {
+    MMA_7455     *device;
+    acc_detect_t  detect;
+    bool          initialized;
+    int           pin_drdy;
+    uint16_t      timeout_drdy;
+} acc_bundle_t;
 
 /**
  * Define private prototypes
@@ -9,18 +60,25 @@ static void acc_init_detect(acc_detect_t*, float);
 static void acc_capture(void);
 static int  process_sample(acc_detect_t*, int);
 
-/* Accelerometers structures */
+/**
+ * Define private variables
+ */
+/* MMA_7455 structures */
 static MMA_7455 acc_device[ACC_CNT] = {
   MMA_7455(spi_protocol, ACC_1_CS),
   MMA_7455(spi_protocol, ACC_2_CS)
 };
+/* Accelerometer structures */
 static acc_bundle_t acc[ACC_CNT];
 
+/**
+ * Define public variables
+ */
 /* Detect flag */
 volatile uint8_t acc_detect_flag = 0;
-
-/* Sofware timer for accelerometer capture */
+/* Software timer for accelerometer capture */
 Timer capture_timer(2, acc_capture, false);
+
 
 static int acc_init_device(
   acc_bundle_t *acc,
@@ -94,7 +152,7 @@ int acc_setup(void)
   error = acc_init_device(&acc[0], &acc_device[0], ACC_1_DRDY);
   if(error != 0)
   {
-#ifdef SERIAL_DEBUG
+#ifdef ACC_DEBUG
     Serial.print("Error initializing Accelerometer #1\n");
     Serial.print("Expected : Read\n");
     Serial.print("55 : "); Serial.println(acc[0].device->readReg(WHOAMI_OFF), HEX);
@@ -109,7 +167,7 @@ int acc_setup(void)
   error = acc_init_device(&acc[1], &acc_device[1], ACC_2_DRDY);
   if(error != 0)
   {
-#ifdef SERIAL_DEBUG
+#ifdef ACC_DEBUG
     Serial.print("Error initializing Accelerometer #2\n");
     Serial.print("Expected : Read\n");
     Serial.print("55 : "); Serial.println(acc[0].device->readReg(WHOAMI_OFF), HEX);
@@ -161,7 +219,6 @@ static void acc_capture(void)
     if(detected == 1)
     {
       acc_detect_flag |= (1 << acc_idx);
-      //Serial.print("Detected on Acc#"); Serial.println(acc_idx);
     }
     /* Reset data ready timeout */
     acc[acc_idx].timeout_drdy = 0;
@@ -170,7 +227,7 @@ static void acc_capture(void)
    * Data not ready
    * When the data is not ready, the accelerometer can be stuck
    * or the interrupt was missed. So if the interrupt does not
-   * happend after 750 checks (3 sec), we make sure ID register
+   * happen after 750 checks (3 sec), we make sure ID register
    * is still valid, and we read the axis register to reset
    * the data ready interrupt.
    */
@@ -203,7 +260,9 @@ static int process_sample(acc_detect_t *acc, int sample_last)
   int sample_last_oldest, sample_delta_oldest;
   int sample_delta;
   float cov, out;
+#ifdef ACC_DEBUG
   char buff[100];
+#endif
 
   if(sample_last >= 0 || sample_last < -95) return -2;
 
@@ -252,55 +311,19 @@ static int process_sample(acc_detect_t *acc, int sample_last)
   acc->cov_idx = (acc->cov_idx + 1) % N;
 
   out = acc->sum_cov_sqrt / N;
-#if 0
-  sprintf(buff, ";%lx;%d;",
-          (uint32_t)acc,
-          acc->sample_buff[acc->sample_idx]);
-  Serial.print(buff);
-  Serial.print(out); Serial.print(";\n");
-#endif
-  if(out > acc->threshold) {
+
+  if(out > acc->threshold)
+  {
+#ifdef ACC_DEBUG
     sprintf(buff, ";%lx;%d;",
             (uint32_t)acc,
             acc->sample_buff[acc->sample_idx]);
     Serial.print(buff);
     Serial.print(out); Serial.print(";\n");
-    //init_acc_detect (acc, acc->threshold);
-    //Serial.print("1;\n");
+#endif
     return 1;
   }
-  //Serial.print("0;\n");
   return 0;
-}
-
-void acc_display(CRGB_p *pLeds, unsigned int strip_cnt, unsigned int led_cnt)
-{
-  unsigned int strip_idx = 0;
-  unsigned int led_idx   = 0;
-  int16_t x, y, z;
-  uint32_t color;
-
-  for(strip_idx = 0; strip_idx < strip_cnt - 1; strip_idx++)
-  {
-    memset(pLeds[strip_idx], 0, led_cnt * sizeof(CRGB));
-  }
-
-  acc[0].device->readAxis10(&x, &y, &z);
-
-#ifdef SERIAL_DEBUG
-  Serial.print("X: ");    Serial.print(x, DEC);
-  Serial.print("\tY: ");  Serial.print(y, DEC);
-  Serial.print("\tZ: ");  Serial.println(z, DEC);
-#endif
-  if(acc_detect_flag)
-  {
-    color = random(0, 0xFFFFFF);
-    for(led_idx = 0; led_idx < led_cnt; led_idx++)  pLeds[7][led_idx] = color;
-  }
-  for(led_idx = 0; led_idx < abs(x)%led_cnt; led_idx++)  pLeds[0][led_idx] = CRGB::White;
-  for(led_idx = 0; led_idx < abs(y)%led_cnt; led_idx++)  pLeds[1][led_idx] = CRGB::White;
-  for(led_idx = 0; led_idx < abs(z)%led_cnt; led_idx++)  pLeds[2][led_idx] = CRGB::White;
-  FastLED.show();
 }
 
 void acc_reset(void)

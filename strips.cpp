@@ -1,5 +1,6 @@
 #include "strips.h"
 #include "light.h"
+#include "accelerometer.h"
 
 SYSTEM_MODE(AUTOMATIC);
 SYSTEM_THREAD(ENABLED);
@@ -51,7 +52,6 @@ void setup()
     }
   } while(acc_error != 0);
 
-  //Particle.function("open", setOpeningMode);
   Particle.function("cmd", processCloudCmd);
 
 
@@ -69,7 +69,9 @@ void loop()
   {
     /* Halt capture routine */
     capture_timer.stop();
+#ifdef SERIAL_DEBUG
     Serial.println("Stop capture");
+#endif
 
     FastLED.setTemperature(main_mode.temperature);
     FastLED.setBrightness(main_mode.brightness);
@@ -83,19 +85,17 @@ void loop()
     {
       fadeOutAll(led_strip.leds, STRIP_CNT, LED_CNT);
     }
-    
-    /* Restart capture routine */
-    acc_reset();
-    /* Reset accelerometer detect flag  */
-    acc_detect_flag = 0;
 
     if(trigger_mode.manual == 0)
     {
+      /* Reset accelerometer detect flag  */
+      acc_detect_flag = 0;
+      /* Reset accelerometers */
+      acc_reset();
+      /* Restart capture routine */
       Serial.println("Start capture");
       capture_timer.start();
     }
-
-
   }
 
   delay(500);
