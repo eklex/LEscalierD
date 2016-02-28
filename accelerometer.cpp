@@ -1,4 +1,5 @@
 #include "strips.h"
+#include "accelerometer.h"
 
 /**
  * Define private prototypes
@@ -199,7 +200,6 @@ static void acc_capture(void)
 
 static int process_sample(acc_detect_t *acc, int sample_last)
 {
-  unsigned int i;
   int sample_last_oldest, sample_delta_oldest;
   int sample_delta;
   float cov, out;
@@ -253,14 +253,14 @@ static int process_sample(acc_detect_t *acc, int sample_last)
 
   out = acc->sum_cov_sqrt / N;
 #if 0
-  sprintf(buff, ";%x;%d;",
+  sprintf(buff, ";%lx;%d;",
           (uint32_t)acc,
           acc->sample_buff[acc->sample_idx]);
   Serial.print(buff);
   Serial.print(out); Serial.print(";\n");
 #endif
   if(out > acc->threshold) {
-    sprintf(buff, ";%x;%d;",
+    sprintf(buff, ";%lx;%d;",
             (uint32_t)acc,
             acc->sample_buff[acc->sample_idx]);
     Serial.print(buff);
@@ -275,8 +275,8 @@ static int process_sample(acc_detect_t *acc, int sample_last)
 
 void acc_display(CRGB_p *pLeds, unsigned int strip_cnt, unsigned int led_cnt)
 {
-  int strip_idx = 0;
-  int led_idx   = 0;
+  unsigned int strip_idx = 0;
+  unsigned int led_idx   = 0;
   int16_t x, y, z;
   uint32_t color;
 

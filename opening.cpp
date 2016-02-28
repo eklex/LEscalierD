@@ -39,7 +39,7 @@ void solidcolor(CRGB_p *pLeds, unsigned int strip_cnt, unsigned int led_cnt, CRG
   FastLED.show();
 }
 
-void opening(CRGB_p *pLeds, unsigned int strip_cnt, unsigned int led_cnt)
+void openingLine(CRGB_p *pLeds, unsigned int strip_cnt, unsigned int led_cnt, CRGB color)
 {
   int   strip_idx = 0;
   int   led_idx   = 0;
@@ -50,24 +50,14 @@ void opening(CRGB_p *pLeds, unsigned int strip_cnt, unsigned int led_cnt)
     for(strip_idx = 0; strip_idx < strip_cnt; strip_idx++)
     {
       led_p = (strip_idx % 2) ? &pLeds[strip_idx][led_cnt-led_idx-1] : &pLeds[strip_idx][led_idx];
-      *led_p = (strip_idx % 2) ? CRGB::Blue : CRGB::Red;
+      *led_p = color;
     }
     FastLED.show();
-    delay(50);
-  }
-  for(led_idx = 0; led_idx < led_cnt; led_idx++)
-  {
-    for(strip_idx = 0; strip_idx < strip_cnt; strip_idx++)
-    {
-      led_p = (strip_idx % 2) ? &pLeds[strip_idx][led_cnt-led_idx-1] : &pLeds[strip_idx][led_idx];
-      *led_p = CRGB::Black;
-    }
-    FastLED.show();
-    delay(50);
+    delay(10);
   }
 }
 
-void openingEpic(CRGB_p *pLeds, unsigned int strip_cnt, unsigned int led_cnt, int order)
+void openingEpic(CRGB_p *pLeds, unsigned int strip_cnt, unsigned int led_cnt, CRGB color, int order)
 {
   int strip_idx = 0;
   int led_idx   = 0;
@@ -81,8 +71,8 @@ void openingEpic(CRGB_p *pLeds, unsigned int strip_cnt, unsigned int led_cnt, in
     pLeds[strip_idx][0]         = random(0, 0xFFFFFF);
     pLeds[strip_idx][led_cnt-1] = random(0, 0xFFFFFF);
 #else
-    pLeds[strip_idx][0] = CRGB::White;
-    pLeds[strip_idx][led_cnt-1] = CRGB::White;
+    pLeds[strip_idx][0] = color;
+    pLeds[strip_idx][led_cnt-1] = color;
 #endif
     FastLED.show();
     delay(50);
@@ -102,8 +92,8 @@ void openingEpic(CRGB_p *pLeds, unsigned int strip_cnt, unsigned int led_cnt, in
       pLeds[strip_idx][led_idx] = random(0, 0xFFFFFF);
       pLeds[strip_idx][led_cnt-led_idx-1] = random(0, 0xFFFFFF);
 #else
-      pLeds[strip_idx][led_idx] = CRGB::White;
-      pLeds[strip_idx][led_cnt-led_idx-1] = CRGB::White;
+      pLeds[strip_idx][led_idx] = color;
+      pLeds[strip_idx][led_cnt-led_idx-1] = color;
 #endif
     }
     FastLED.show();
@@ -112,7 +102,7 @@ void openingEpic(CRGB_p *pLeds, unsigned int strip_cnt, unsigned int led_cnt, in
   }
 }
 
-void openingCenter(CRGB_p *pLeds, unsigned int strip_cnt, unsigned int led_cnt, int order)
+void openingCenter(CRGB_p *pLeds, unsigned int strip_cnt, unsigned int led_cnt, CRGB color, int order)
 {
   int strip_idx = 0;
   int led_idx   = 0;
@@ -121,7 +111,7 @@ void openingCenter(CRGB_p *pLeds, unsigned int strip_cnt, unsigned int led_cnt, 
       ((order > 0) && (strip_idx < strip_cnt)) || ((order < 0) && (strip_idx >= 0));
       strip_idx += order)
   {
-    pLeds[strip_idx][led_cnt/2 + led_cnt%2] = CRGB::White;
+    pLeds[strip_idx][led_cnt/2 + led_cnt%2] = color;
     FastLED.show();
     delay(50);
   }
@@ -130,15 +120,15 @@ void openingCenter(CRGB_p *pLeds, unsigned int strip_cnt, unsigned int led_cnt, 
   {
     for(strip_idx = 0; strip_idx < strip_cnt; strip_idx++)
     {
-      pLeds[strip_idx][led_cnt/2 - led_idx] = CRGB::White;
-      pLeds[strip_idx][led_cnt/2 + led_idx] = CRGB::White;
+      pLeds[strip_idx][led_cnt/2 - led_idx] = color;
+      pLeds[strip_idx][led_cnt/2 + led_idx] = color;
     }
     FastLED.show();
     delay(7);
   }
 }
 
-void openingCone(CRGB_p *pLeds, unsigned int strip_cnt, unsigned int led_cnt, int order)
+void openingCone(CRGB_p *pLeds, unsigned int strip_cnt, unsigned int led_cnt, CRGB color, int order)
 {
   int  strip_idx = 0;
   int  cone_idx  = 0;
@@ -156,7 +146,7 @@ void openingCone(CRGB_p *pLeds, unsigned int strip_cnt, unsigned int led_cnt, in
   }
 }
 
-void openingStar(CRGB_p *pLeds, unsigned int strip_cnt, unsigned int led_cnt)
+void openingStar(CRGB_p *pLeds, unsigned int strip_cnt, unsigned int led_cnt, CRGB color)
 {
   int index = 0;
   uint led = 0;
@@ -172,7 +162,7 @@ void openingStar(CRGB_p *pLeds, unsigned int strip_cnt, unsigned int led_cnt)
 #ifdef RAINBOW
     pLeds[led / led_cnt][led % led_cnt] = random(0, 0xFFFFFF);
 #else
-    pLeds[led / led_cnt][led % led_cnt] = CRGB::White;
+    pLeds[led / led_cnt][led % led_cnt] = color;
 #endif
     FastLED.show();
 
@@ -183,7 +173,7 @@ void openingStar(CRGB_p *pLeds, unsigned int strip_cnt, unsigned int led_cnt)
   }
 }
 
-void constellation(CRGB_p *pLeds, unsigned int strip_cnt, unsigned int led_cnt)
+void constellation(CRGB_p *pLeds, unsigned int strip_cnt, unsigned int led_cnt, CRGB color)
 {
   static int index = 0;
   uint led_idx = 0;
@@ -195,11 +185,11 @@ void constellation(CRGB_p *pLeds, unsigned int strip_cnt, unsigned int led_cnt)
     led = random(0, strip_cnt*led_cnt);
   } while(pLeds[led / led_cnt][led % led_cnt] != (CRGB)0x000000
           && led_idx++ < strip_cnt * led_cnt);
-  if(led_idx >= strip_cnt * led_cnt) solidblack(pLeds, strip_cnt, led_cnt);
+  if(led_idx >= strip_cnt * led_cnt) solidcolor(pLeds, strip_cnt, led_cnt, CRGB::Black);
 #ifdef RAINBOW
   fadeIn(pLeds, led / led_cnt, led % led_cnt, random(0, 0xFFFFFF));
 #else
-  fadeIn(pLeds, led / led_cnt, led % led_cnt, CRGB::White);
+  fadeIn(pLeds, led / led_cnt, led % led_cnt, color);
 #endif
   index++;
   if(index >= strip_cnt*led_cnt/6)
