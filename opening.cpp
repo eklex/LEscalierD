@@ -1,35 +1,25 @@
 #include "strips.h"
 
-void solidblack(CRGB_p *pLeds, unsigned int strip_cnt, unsigned int led_cnt)
-{
-  int strip_idx = 0;
-  int led_idx   = 0;
-
-  for(strip_idx = 0; strip_idx < strip_cnt; strip_idx++)
-  {
-    memset(pLeds[strip_idx], 0, led_cnt * sizeof(CRGB));
-  }
-  FastLED.show();
-}
-
-void solidwhite(CRGB_p *pLeds, unsigned int strip_cnt, unsigned int led_cnt)
-{
-  int strip_idx = 0;
-  int led_idx   = 0;
-
-  for(strip_idx = 0; strip_idx < strip_cnt; strip_idx++)
-  {
-    memset(pLeds[strip_idx], 0xff, led_cnt * sizeof(CRGB));
-  }
-  FastLED.show();
-}
-
 void solidcolor(CRGB_p *pLeds, unsigned int strip_cnt, unsigned int led_cnt, CRGB color)
 {
-  int strip_idx = 0;
-  int led_idx   = 0;
+  unsigned int strip_idx = 0;
+  unsigned int led_idx   = 0;
 
   for(strip_idx = 0; strip_idx < strip_cnt; strip_idx++)
+  {
+    for(led_idx = 0; led_idx < led_cnt; led_idx++)
+    {
+      pLeds[strip_idx][led_idx] = color;
+    }
+  }
+  FastLED.show();
+}
+
+void solidcolorStrip(CRGB_p *pLeds, unsigned int strip_idx, unsigned int strip_cnt, unsigned int led_cnt, CRGB color)
+{
+  unsigned int led_idx   = 0;
+
+  if(strip_idx < strip_cnt)
   {
     for(led_idx = 0; led_idx < led_cnt; led_idx++)
     {

@@ -1,9 +1,11 @@
 accelerometer.cpp
 accelerometer.h
+animation.h
 closing.cpp
 cloud.cpp
 helpers.cpp
-light.h
+leds.cpp
+leds.h
 opening.cpp
 strips.cpp
 strips.h
