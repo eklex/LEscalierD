@@ -36,6 +36,7 @@ void solidcolorStrip(CRGB_p *pLeds, unsigned int strip_idx, unsigned int strip_c
 
 void closingLine(CRGB_p *pLeds, unsigned int strip_cnt, unsigned int led_cnt, CRGB color);
 
+void publishCmd();
 int processCloudCmd(String cmd);
 
 char** cmdsplit(const char *str, const char *sep, int *argc, unsigned long int *val);

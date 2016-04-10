@@ -6,6 +6,8 @@
 SYSTEM_MODE(AUTOMATIC);
 SYSTEM_THREAD(ENABLED);
 
+bool capture_running = false;
+extern char running_cmd[256];
 
 void setup()
 {
@@ -42,14 +44,17 @@ void setup()
   } while(acc_error != 0);
 
   /* Initialize default animation */
-  main_mode.animation = getAnimation(0);
+  main_mode.animation = getAnimation("line");
   /* Register cloud function */
   Particle.function("cmd", processCloudCmd);
-
+  Particle.variable("pull", running_cmd);
+  publishCmd();
+  
 #ifdef SERIAL_DEBUG
   Serial.println("Ready to rumbule!");
 #endif
   capture_timer.start();
+  capture_running = true;
 }
 
 void loop()
@@ -57,10 +62,14 @@ void loop()
   if(acc_detect_flag || main_mode.control.manual)
   {
     /* Halt capture routine */
-    capture_timer.stop();
+    if(capture_running)
+    {
+      capture_timer.stop();
+      capture_running = false;
 #ifdef SERIAL_DEBUG
-    Serial.println("Stop capture");
+      Serial.println("Stop capture");
 #endif
+    }
 
     FastLED.setTemperature(main_mode.light.temperature);
     FastLED.setBrightness(main_mode.light.brightness);
@@ -75,7 +84,7 @@ void loop()
       fadeOutAll(main_mode.strip->leds, main_mode.strip->strip_cnt, main_mode.strip->led_cnt);
     }
 
-    if(main_mode.control.manual == 0)
+    if(capture_running == false && main_mode.control.manual == 0)
     {
       /* Reset accelerometer detect flag  */
       acc_detect_flag = 0;
@@ -86,5 +95,12 @@ void loop()
       capture_timer.start();
     }
   }
+  else if(capture_running == false && main_mode.control.manual == 0)
+  {
+    /* auto and capture stop -> need to restart capture */
+    capture_timer.reset();
+    capture_running = true;
+  }
+
   delay(500);
 }

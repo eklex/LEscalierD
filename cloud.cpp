@@ -17,7 +17,7 @@ main_control_t main_mode = {
     Candle,            /* temperature */
     30,                /* delay */
     0xffffff,          /* color value */
-    0,                 /* random color */
+    1,                 /* random color */
     50,                /* brightness */
   },
   {                  /** light control ******************/
@@ -28,29 +28,61 @@ main_control_t main_mode = {
   NULL               /** animation **********************/
 };
 
+char running_cmd[256];
+
+void publishCmd()
+{
+  static char color[7] = {0};
+  static uint8_t temp  = 0;
+  if(main_mode.light.random) strcpy(color, "random");
+  else sprintf(color, "%06x", main_mode.light.color);
+  switch(main_mode.light.temperature)
+  {
+    case Candle:          temp = 1; break;
+    case Tungsten40W:     temp = 2; break;
+    case Tungsten100W:    temp = 3; break;
+    case Halogen:         temp = 4; break;
+    case CarbonArc:       temp = 5; break;
+    case HighNoonSun:     temp = 6; break;
+    case DirectSunlight:  temp = 7; break;
+    case OvercastSky:     temp = 8; break;
+    case ClearBlueSky:    temp = 9; break;
+    default:              temp = 0; break;
+  }
+  //memset(running_cmd, 0, sizeof(running_cmd));
+  sprintf(running_cmd, "effect:%s,color:%s,temp:%d,bright:%d,delay:%d,trigger:%d",
+          main_mode.animation->name.c_str(),
+          color,
+          temp,
+          main_mode.light.brightness,
+          main_mode.light.delay,
+          main_mode.control.manual);
+}
+
 int processCloudCmd(String cmd)
 {
   const anima_def_t *animation = NULL;
   char *pstr = NULL;
   uint32_t temp = 0;
+  int retVal = 0;
 
   animation = getAnimation(cmd);
   if(animation != NULL)
   {
     main_mode.animation = animation;
-    return 1;
+    retVal = 1;
   }
   else if(strstr(cmd, "delay:") != NULL)
   {
     pstr = strchr(cmd, ':') + 1;
     main_mode.light.delay = (uint32_t)strtol(pstr, NULL, 0);
-    return 2;
+    retVal = 2;
   }
   else if(strstr(cmd, "bright:") != NULL)
   {
     pstr = strchr(cmd, ':') + 1;
     main_mode.light.brightness = (uint32_t)strtol(pstr, NULL, 0);
-    return 3;
+    retVal = 3;
   }
   else if(strstr(cmd, "temp:") != NULL)
   {
@@ -81,7 +113,7 @@ int processCloudCmd(String cmd)
         main_mode.light.temperature = UncorrectedTemperature;
         break;
     }
-    return 4;
+    retVal = 4;
   }
   else if(strstr(cmd, "color:") != NULL)
   {
@@ -92,21 +124,29 @@ int processCloudCmd(String cmd)
       main_mode.light.random = 0;
       main_mode.light.color = (uint32_t)strtol(pstr, NULL, 0);
     }
-    return 5;
+    retVal = 5;
   }
   else if(strstr(cmd, "trigger:") != NULL)
   {
     pstr = strchr(cmd, ':') + 1;
     if(strstr(cmd, "manual") != NULL) main_mode.control.manual = 1;
-    else main_mode.control.manual = 0;
-    return 6;
+    else
+    {
+      main_mode.control.manual = 0;
+    }
+    retVal = 6;
   }
   else if(cmd == "reset")
   {
     System.reset();
+    retVal = 7;
   }
-
-  return 0;
+  else if(cmd == "pull")
+  {
+    retVal = 8;
+  }
+  publishCmd();
+  return retVal;
 }
 
 const anima_def_t* getAnimation(String name)

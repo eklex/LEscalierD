@@ -2,7 +2,7 @@
 #include "MMA_7455.h"
 
 /* Debug token */
-#undef ACC_DEBUG
+#define ACC_DEBUG
 
 /**
  * Define hardware specs
@@ -22,7 +22,7 @@
  * Auto-covariance constants
  */
 static const int   delta = 1;
-static const float th    = 3.5;
+static const float th    = 2;
 static const int   w     = 100;
 static const int   N     = 50;
 
