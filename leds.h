@@ -20,6 +20,4 @@ typedef struct _led_strip_t {
 
 const led_strip_t* led_setup(void);
 
-
-
 #endif /* __LEDS_H__ */

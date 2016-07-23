@@ -1,7 +1,7 @@
 #include "strips.h"
 #include "animation.h"
-#include "accelerometer.h"
 #include "leds.h"
+#include "ad7887.h"
 
 SYSTEM_MODE(AUTOMATIC);
 SYSTEM_THREAD(ENABLED);
@@ -11,9 +11,6 @@ extern char running_cmd[256];
 
 void setup()
 {
-  int     acc_error = 0;
-  uint8_t acc_strip = 0;
-
   capture_timer.stop();
 
 #ifdef SERIAL_DEBUG
@@ -24,24 +21,8 @@ void setup()
   /* Initialize LED strips */
   main_mode.strip = led_setup();
 
-  /* Initialize accelerometers */
-  do
-  {
-    acc_error = acc_setup();
-    if(acc_error != 0)
-    {
-#ifdef SERIAL_DEBUG
-      Serial.print("Acc. initialization failed!!!");
-#endif
-      /* Blink strip close to failing acc */
-      if     (acc_error == -1) acc_strip = 0;
-      else if(acc_error == -2) acc_strip = main_mode.strip->strip_cnt - 1;
-      solidcolorStrip(main_mode.strip->leds, acc_strip, main_mode.strip->strip_cnt, main_mode.strip->led_cnt, CRGB::White);
-      delay(5000);
-      solidcolorStrip(main_mode.strip->leds, acc_strip, main_mode.strip->strip_cnt, main_mode.strip->led_cnt, CRGB::Black);
-      delay(1000);
-    }
-  } while(acc_error != 0);
+  /* Initialize ADC */
+  adc_setup();
 
   /* Initialize default animation */
   main_mode.animation = getAnimation("line");
@@ -49,7 +30,7 @@ void setup()
   Particle.function("cmd", processCloudCmd);
   Particle.variable("pull", running_cmd);
   publishCmd();
-  
+
 #ifdef SERIAL_DEBUG
   Serial.println("Ready to rumbule!");
 #endif
@@ -59,7 +40,7 @@ void setup()
 
 void loop()
 {
-  if(acc_detect_flag || main_mode.control.manual)
+  if(adc_detect_flag || main_mode.control.manual)
   {
     /* Halt capture routine */
     if(capture_running)
@@ -75,8 +56,8 @@ void loop()
     FastLED.setBrightness(main_mode.light.brightness);
     if(main_mode.light.random == 1) main_mode.light.color = random(0, 0xFFFFFF);
 
-         if(acc_detect_flag & (1 << 1)) runAnimation(main_mode.animation, main_mode.strip, main_mode.light.color, TOP2BOTTOM);
-    else if(acc_detect_flag & (1 << 0)) runAnimation(main_mode.animation, main_mode.strip, main_mode.light.color, BOTTOM2TOP);
+         if(adc_detect_flag & (1 << 1)) runAnimation(main_mode.animation, main_mode.strip, main_mode.light.color, TOP2BOTTOM);
+    else if(adc_detect_flag & (1 << 0)) runAnimation(main_mode.animation, main_mode.strip, main_mode.light.color, BOTTOM2TOP);
     else                                runAnimation(main_mode.animation, main_mode.strip, main_mode.light.color, TOP2BOTTOM);
     delay(main_mode.light.delay * 1000);
     if(main_mode.animation->support.open)
@@ -87,9 +68,9 @@ void loop()
     if(capture_running == false && main_mode.control.manual == 0)
     {
       /* Reset accelerometer detect flag  */
-      acc_detect_flag = 0;
-      /* Reset accelerometers */
-      acc_reset();
+      adc_detect_flag = 0;
+      /* Reset ADC capture */
+      adc_reset();
       /* Restart capture routine */
       Serial.println("Start capture");
       capture_timer.start();

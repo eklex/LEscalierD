@@ -3,10 +3,9 @@
 
 #include "application.h"
 #include "leds.h"
+#include "debug.h"
 
 #undef RAINBOW
-#define SERIAL_DEBUG
-#undef ACC_PULL
 
 /* Display rules */
 #define TOP2BOTTOM  (-1)

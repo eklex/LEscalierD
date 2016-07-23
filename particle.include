@@ -1,5 +1,5 @@
-accelerometer.cpp
-accelerometer.h
+ad7887.cpp
+ad7887.h
 animation.h
 closing.cpp
 cloud.cpp
@@ -9,6 +9,7 @@ leds.h
 opening.cpp
 strips.cpp
 strips.h
+debug.h
 FastLED/colorpalettes.cpp
 FastLED/colorutils.cpp
 FastLED/FastLED.cpp
@@ -51,5 +52,3 @@ FastLED/platforms/avr/fastspi_avr.h
 FastLED/platforms/avr/led_sysdefs_avr.h
 FastLED/platforms.h
 FastLED/power_mgt.h
-MMA_7455/MMA_7455.cpp
-MMA_7455/MMA_7455.h
