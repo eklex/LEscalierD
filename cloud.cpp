@@ -3,13 +3,15 @@
 
 static const anima_def_t animation_list[] =
 {
-  { "epic",   (anima_func_wo_t)openingEpic,   ANIMA_OPEN | ANIMA_ORDER | ANIMA_RAINBOW },
-  { "center", (anima_func_wo_t)openingCenter, ANIMA_OPEN | ANIMA_ORDER | ANIMA_RAINBOW },
-  { "cone",   (anima_func_wo_t)openingCone,   ANIMA_OPEN | ANIMA_ORDER | ANIMA_RAINBOW },
-  { "star",   (anima_func_wo_t)openingStar,   ANIMA_OPEN | ANIMA_CLOSE | ANIMA_RAINBOW },
-  { "line",   (anima_func_wo_t)openingLine,   ANIMA_OPEN | ANIMA_CLOSE },
-  { "const",  (anima_func_wo_t)constellation, ANIMA_CONTINOUS },
-  { "solid",  (anima_func_wo_t)solidcolor,    ANIMA_OPEN },
+  { "epicsides",  (anima_func_wo_t)openingEpicSides,  ANIMA_OPEN | ANIMA_ORDER | ANIMA_RAINBOW },
+  { "epiccenter", (anima_func_wo_t)openingEpicCenter, ANIMA_OPEN | ANIMA_ORDER | ANIMA_RAINBOW },
+  { "center",     (anima_func_wo_t)openingCenter,     ANIMA_OPEN | ANIMA_ORDER | ANIMA_RAINBOW },
+  { "cone",       (anima_func_wo_t)openingCone,       ANIMA_OPEN | ANIMA_ORDER | ANIMA_RAINBOW },
+  { "sides",      (anima_func_wo_t)openingSides,      ANIMA_OPEN | ANIMA_ORDER | ANIMA_RAINBOW },
+  { "star",       (anima_func_wo_t)openingStar,       ANIMA_OPEN | ANIMA_CLOSE | ANIMA_RAINBOW },
+  { "line",       (anima_func_wo_t)openingLine,       ANIMA_OPEN | ANIMA_CLOSE },
+  { "const",      (anima_func_wo_t)constellation,     ANIMA_CONTINOUS },
+  { "solid",      (anima_func_wo_t)solidcolor,        ANIMA_OPEN },
 };
 
 main_control_t main_mode = {

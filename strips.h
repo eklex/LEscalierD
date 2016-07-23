@@ -24,14 +24,16 @@ void fadeOut   (CRGB_p *pLeds, unsigned int strip_idx, unsigned int led_idx, CRG
 void fadeOut   (CRGB_p *pLeds, unsigned int strip_idx, unsigned int led_idx);
 void fadeOutAll(CRGB_p *pLeds, unsigned int strip_cnt, unsigned int led_cnt, unsigned int scale = 2);
 
-void openingEpic  (CRGB_p *pLeds, unsigned int strip_cnt, unsigned int led_cnt, CRGB color, int order);
-void openingCenter(CRGB_p *pLeds, unsigned int strip_cnt, unsigned int led_cnt, CRGB color, int order);
-void openingCone  (CRGB_p *pLeds, unsigned int strip_cnt, unsigned int led_cnt, CRGB color, int order);
-void openingLine  (CRGB_p *pLeds, unsigned int strip_cnt, unsigned int led_cnt, CRGB color);
-void openingStar  (CRGB_p *pLeds, unsigned int strip_cnt, unsigned int led_cnt, CRGB color);
-void constellation(CRGB_p *pLeds, unsigned int strip_cnt, unsigned int led_cnt, CRGB color);
-void solidcolor   (CRGB_p *pLeds, unsigned int strip_cnt, unsigned int led_cnt, CRGB color);
-void solidcolorStrip(CRGB_p *pLeds, unsigned int strip_idx, unsigned int strip_cnt, unsigned int led_cnt, CRGB color);
+void openingEpicSides (CRGB_p *pLeds, unsigned int strip_cnt, unsigned int led_cnt, CRGB color, int order);
+void openingEpicCenter(CRGB_p *pLeds, unsigned int strip_cnt, unsigned int led_cnt, CRGB color, int order);
+void openingCenter    (CRGB_p *pLeds, unsigned int strip_cnt, unsigned int led_cnt, CRGB color, int order);
+void openingCone      (CRGB_p *pLeds, unsigned int strip_cnt, unsigned int led_cnt, CRGB color, int order);
+void openingSides     (CRGB_p *pLeds, unsigned int strip_cnt, unsigned int led_cnt, CRGB color, int order);
+void openingLine      (CRGB_p *pLeds, unsigned int strip_cnt, unsigned int led_cnt, CRGB color);
+void openingStar      (CRGB_p *pLeds, unsigned int strip_cnt, unsigned int led_cnt, CRGB color);
+void constellation    (CRGB_p *pLeds, unsigned int strip_cnt, unsigned int led_cnt, CRGB color);
+void solidcolor       (CRGB_p *pLeds, unsigned int strip_cnt, unsigned int led_cnt, CRGB color);
+void solidcolorStrip  (CRGB_p *pLeds, unsigned int strip_idx, unsigned int strip_cnt, unsigned int led_cnt, CRGB color);
 
 void closingLine(CRGB_p *pLeds, unsigned int strip_cnt, unsigned int led_cnt, CRGB color);
 

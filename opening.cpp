@@ -43,11 +43,11 @@ void openingLine(CRGB_p *pLeds, unsigned int strip_cnt, unsigned int led_cnt, CR
       *led_p = color;
     }
     FastLED.show();
-    delay(10);
+    delay(3);
   }
 }
 
-void openingEpic(CRGB_p *pLeds, unsigned int strip_cnt, unsigned int led_cnt, CRGB color, int order)
+void openingEpicSides(CRGB_p *pLeds, unsigned int strip_cnt, unsigned int led_cnt, CRGB color, int order)
 {
   int strip_idx = 0;
   int led_idx   = 0;
@@ -92,7 +92,7 @@ void openingEpic(CRGB_p *pLeds, unsigned int strip_cnt, unsigned int led_cnt, CR
   }
 }
 
-void openingCenter(CRGB_p *pLeds, unsigned int strip_cnt, unsigned int led_cnt, CRGB color, int order)
+void openingEpicCenter(CRGB_p *pLeds, unsigned int strip_cnt, unsigned int led_cnt, CRGB color, int order)
 {
   int strip_idx = 0;
   int led_idx   = 0;
@@ -118,9 +118,25 @@ void openingCenter(CRGB_p *pLeds, unsigned int strip_cnt, unsigned int led_cnt, 
   }
 }
 
+void openingCenter(CRGB_p *pLeds, unsigned int strip_cnt, unsigned int led_cnt, CRGB color, int order)
+{
+  int strip_idx = 0;
+  int led_idx   = 0;
+
+  for(strip_idx = (order > 0) ? 0 : strip_cnt - 1;
+      ((order > 0) && (strip_idx < strip_cnt)) || ((order < 0) && (strip_idx >= 0));
+      strip_idx += order)
+  {
+    pLeds[strip_idx][led_cnt/2 + led_cnt%2] = color;
+    FastLED.show();
+    delay(50);
+  }
+}
+
 void openingCone(CRGB_p *pLeds, unsigned int strip_cnt, unsigned int led_cnt, CRGB color, int order)
 {
   int  strip_idx = 0;
+  int  led_idx   = 0;
   int  cone_idx  = 0;
   uint offset    = 0;
 
@@ -130,7 +146,36 @@ void openingCone(CRGB_p *pLeds, unsigned int strip_cnt, unsigned int led_cnt, CR
   {
     cone_idx = (cone_idx >= 0) ? cone_idx : 0;
     offset = cone_idx * ((led_cnt - 1) / (2 * (strip_cnt - 1)));
-    memset(pLeds[strip_idx] + offset, 0xFF, (led_cnt - 2 * offset) * sizeof(CRGB));
+    for(led_idx = 0; led_idx < led_cnt - 2 * offset; led_idx++)
+    {
+#ifdef RAINBOW
+      (pLeds[strip_idx] + offset)[led_idx] = random(0, 0xFFFFFF);
+#else
+      (pLeds[strip_idx] + offset)[led_idx] = color;
+#endif
+    }
+    FastLED.show();
+    delay(50);
+  }
+}
+
+void openingSides(CRGB_p *pLeds, unsigned int strip_cnt, unsigned int led_cnt, CRGB color, int order)
+{
+  int strip_idx = 0;
+  int led_idx   = 0;
+
+  /* turn border pixel on */
+  for(strip_idx = (order > 0) ? 0 : strip_cnt - 1;
+      ((order > 0) && (strip_idx < strip_cnt)) || ((order < 0) && (strip_idx >= 0));
+      strip_idx += order)
+  {
+#ifdef RAINBOW
+    pLeds[strip_idx][0]         = random(0, 0xFFFFFF);
+    pLeds[strip_idx][led_cnt-1] = random(0, 0xFFFFFF);
+#else
+    pLeds[strip_idx][0] = color;
+    pLeds[strip_idx][led_cnt-1] = color;
+#endif
     FastLED.show();
     delay(50);
   }
@@ -155,11 +200,12 @@ void openingStar(CRGB_p *pLeds, unsigned int strip_cnt, unsigned int led_cnt, CR
     pLeds[led / led_cnt][led % led_cnt] = color;
 #endif
     FastLED.show();
-
+#if 0
     if(index < strip_cnt*led_cnt/10) delay(80);
     if(index < strip_cnt*led_cnt/8) delay(40);
     else if(index < strip_cnt*led_cnt/4) delay(10);
     else if(index < strip_cnt*led_cnt/2) delay(2);
+#endif
   }
 }
 
@@ -182,7 +228,7 @@ void constellation(CRGB_p *pLeds, unsigned int strip_cnt, unsigned int led_cnt, 
   fadeIn(pLeds, led / led_cnt, led % led_cnt, color);
 #endif
   index++;
-  if(index >= strip_cnt*led_cnt/6)
+  if(index >= strip_cnt*led_cnt/2)
   {
     do
     {
