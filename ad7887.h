@@ -11,9 +11,11 @@
 /* ADC count */
 #define ADC_CNT     (2)
 /* ADC #1 Chip Select */
-#define ADC_1_CS    (A2)
-/* ADC #1 Data Ready */
+#define ADC_1_CS    (A0)
+/* ADC #2 Chip Select */
 #define ADC_2_CS    (A1)
+/* ADC #3 Chip Select */
+#define ADC_3_CS    (A2)
 
 /**
  * Define public variables

@@ -1,14 +1,14 @@
 #include "leds.h"
 
 /* Pin assigned per strip */
-#define STRIP_1     (D6)
-#define STRIP_2     (D7)
-#define STRIP_3     (D4)
+#define STRIP_1     (D0)
+#define STRIP_2     (D1)
+#define STRIP_3     (D2)
 #define STRIP_4     (D3)
-#define STRIP_5     (D2)
-#define STRIP_6     (D1)
-#define STRIP_7     (D5)
-#define STRIP_8     (D0)
+#define STRIP_5     (D4)
+#define STRIP_6     (D5)
+#define STRIP_7     (D6)
+#define STRIP_8     (D7)
 
 /* LED array */
 static CRGB leds[STRIP_CNT][LED_CNT] = {CRGB::Black};

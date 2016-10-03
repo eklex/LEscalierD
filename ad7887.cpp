@@ -12,7 +12,6 @@
 #define AD7887_PM_MODE3		(2)	/* auto shutdown after conversion */
 #define AD7887_PM_MODE4		(3)	/* standby mode */
 
-#define ADC_SPI_CS        (A1)
 #define ADC_CTL_REG       (AD7887_PM_MODE1 | AD7887_CH_AIN0 | AD7887_REF_DIS)
 
 /**
@@ -72,19 +71,18 @@ int adc_setup(void)
   SPI.setDataMode(SPI_MODE3);
 
   /* Setup Chip Select pin */
-  adc[0].pin_cs = ADC_1_CS;
-  adc[1].pin_cs = ADC_2_CS;
+  if(ADC_CNT > 0) adc[0].pin_cs = ADC_1_CS;
+  if(ADC_CNT > 1) adc[1].pin_cs = ADC_2_CS;
+  if(ADC_CNT > 2) adc[2].pin_cs = ADC_3_CS;
   for(idx = 0; idx < ADC_CNT; idx++)
   {
     pinMode(adc[idx].pin_cs, OUTPUT);
     digitalWrite(adc[idx].pin_cs, HIGH);
-  }
 
-  /* Setup ADC threshold */
-  adc[0].th_value = adc_th_value;
-  adc[0].th_len   = adc_th_len;
-  adc[1].th_value = adc_th_value;
-  adc[1].th_len   = adc_th_len;
+    /* Setup ADC threshold */
+    adc[idx].th_value = adc_th_value;
+    adc[idx].th_len   = adc_th_len;
+  }
 
   /* Reset capture variables */
   adc_reset();
