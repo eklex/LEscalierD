@@ -8,6 +8,7 @@ static const anima_def_t animation_list[] =
   { "center",     (anima_func_wo_t)openingCenter,     ANIMA_OPEN | ANIMA_ORDER | ANIMA_RAINBOW },
   { "cone",       (anima_func_wo_t)openingCone,       ANIMA_OPEN | ANIMA_ORDER | ANIMA_RAINBOW },
   { "sides",      (anima_func_wo_t)openingSides,      ANIMA_OPEN | ANIMA_ORDER | ANIMA_RAINBOW },
+  { "cascade",    (anima_func_wo_t)openingCascade,    ANIMA_OPEN | ANIMA_ORDER | ANIMA_RAINBOW },
   { "star",       (anima_func_wo_t)openingStar,       ANIMA_OPEN | ANIMA_CLOSE | ANIMA_RAINBOW },
   { "line",       (anima_func_wo_t)openingLine,       ANIMA_OPEN | ANIMA_CLOSE },
   { "const",      (anima_func_wo_t)constellation,     ANIMA_CONTINOUS },

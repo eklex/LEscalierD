@@ -29,6 +29,7 @@ void openingEpicCenter(CRGB_p *pLeds, unsigned int strip_cnt, unsigned int led_c
 void openingCenter    (CRGB_p *pLeds, unsigned int strip_cnt, unsigned int led_cnt, CRGB color, int order);
 void openingCone      (CRGB_p *pLeds, unsigned int strip_cnt, unsigned int led_cnt, CRGB color, int order);
 void openingSides     (CRGB_p *pLeds, unsigned int strip_cnt, unsigned int led_cnt, CRGB color, int order);
+void openingCascade   (CRGB_p *pLeds, unsigned int strip_cnt, unsigned int led_cnt, CRGB color, int order);
 void openingLine      (CRGB_p *pLeds, unsigned int strip_cnt, unsigned int led_cnt, CRGB color);
 void openingStar      (CRGB_p *pLeds, unsigned int strip_cnt, unsigned int led_cnt, CRGB color);
 void constellation    (CRGB_p *pLeds, unsigned int strip_cnt, unsigned int led_cnt, CRGB color);

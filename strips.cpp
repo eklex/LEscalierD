@@ -25,7 +25,7 @@ void setup()
   adc_setup();
 
   /* Initialize default animation */
-  main_mode.animation = getAnimation("sides");
+  main_mode.animation = getAnimation("cascade");
   /* Register cloud function */
   Particle.function("cmd", processCloudCmd);
   Particle.variable("pull", running_cmd);

@@ -181,6 +181,41 @@ void openingSides(CRGB_p *pLeds, unsigned int strip_cnt, unsigned int led_cnt, C
   }
 }
 
+void openingCascade(CRGB_p *pLeds, unsigned int strip_cnt, unsigned int led_cnt, CRGB color, int order)
+{
+  int step_idx  = 0;
+  int strip_idx = 0;
+  int led_idx   = 0;
+
+  for(step_idx = 0; step_idx < strip_cnt; step_idx++)
+  {
+    for(strip_idx = (order < 0) ? 0 : strip_cnt - 1;
+        ((order < 0) && (strip_idx < strip_cnt - step_idx)) ||
+        ((order > 0) && (strip_idx >= step_idx));
+        strip_idx -= order)
+    {
+      for(led_idx = 0; led_idx < led_cnt; led_idx++)
+      {
+#ifdef RAINBOW
+        pLeds[strip_idx][led_idx] = random(0, 0xFFFFFF);
+#else
+        pLeds[strip_idx][led_idx] = color;
+#endif
+      }
+      FastLED.show();
+      if(((order < 0) && (strip_idx < strip_cnt - step_idx - 1)) ||
+         ((order > 0) && (strip_idx >= step_idx + 1)))
+      {
+        for(led_idx = 0; led_idx < led_cnt; led_idx++)
+        {
+          pLeds[strip_idx][led_idx] = CRGB::Black;
+        }
+      }
+      delay(50);
+    }
+  }
+}
+
 void openingStar(CRGB_p *pLeds, unsigned int strip_cnt, unsigned int led_cnt, CRGB color)
 {
   int index = 0;
