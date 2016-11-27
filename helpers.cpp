@@ -1,4 +1,4 @@
-#include "strips.h"
+#include "lescalierd.h"
 
 void fadeIn(CRGB_p *pLeds, unsigned int strip_idx, unsigned int led_idx, CRGB color)
 {

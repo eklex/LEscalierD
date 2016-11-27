@@ -7,8 +7,8 @@ helpers.cpp
 leds.cpp
 leds.h
 opening.cpp
-strips.cpp
-strips.h
+lescalierd.cpp
+lescalierd.h
 debug.h
 FastLED/colorpalettes.cpp
 FastLED/colorutils.cpp

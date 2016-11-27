@@ -1,4 +1,4 @@
-#include "strips.h"
+#include "lescalierd.h"
 #include "animation.h"
 
 static const anima_def_t animation_list[] =

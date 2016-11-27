@@ -1,4 +1,4 @@
-#include "strips.h"
+#include "lescalierd.h"
 
 void closingLine(CRGB_p *pLeds, unsigned int strip_cnt, unsigned int led_cnt, CRGB color)
 {

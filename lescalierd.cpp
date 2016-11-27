@@ -1,4 +1,4 @@
-#include "strips.h"
+#include "lescalierd.h"
 #include "animation.h"
 #include "leds.h"
 #include "ad7887.h"

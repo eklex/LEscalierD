@@ -1,5 +1,5 @@
-#ifndef __STRIPS_H__
-#define __STRIPS_H__
+#ifndef __LESCALIERD_H__
+#define __LESCALIERD_H__
 
 #include "application.h"
 #include "leds.h"
@@ -45,4 +45,4 @@ char** cmdsplit(const char *str, const char *sep, int *argc, unsigned long int *
 void cmdfree(char** str, int str_cnt);
 unsigned long int strnum(char *str);
 
-#endif /* __STRIPS_H__ */
+#endif /* __LESCALIERD_H__ */
