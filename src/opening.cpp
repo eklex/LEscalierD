@@ -1,3 +1,20 @@
+/**
+ * This file is part of the LEscalierD project (https://github.com/eklex/LEscalierD).
+ * Copyright (C) 2016, 2020  Alexandre Boni.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, version 3.
+ *
+ * This program is distributed in the hope that it will be useful, but
+ * WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ * General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ */
+
 #include "lescalierd.h"
 
 void solidcolor(CRGB_p *pLeds, unsigned int strip_cnt, unsigned int led_cnt, CRGB color)
@@ -47,7 +64,7 @@ void openingLine(CRGB_p *pLeds, unsigned int strip_cnt, unsigned int led_cnt, CR
   }
 }
 
-void openingEpicSides(CRGB_p *pLeds, unsigned int strip_cnt, unsigned int led_cnt, CRGB color, int order)
+void openingEpicSides(CRGB_p *pLeds, unsigned int strip_cnt, unsigned int led_cnt, CRGB color, int rainbow, int order)
 {
   int strip_idx = 0;
   int led_idx   = 0;
@@ -57,13 +74,17 @@ void openingEpicSides(CRGB_p *pLeds, unsigned int strip_cnt, unsigned int led_cn
       ((order > 0) && (strip_idx < strip_cnt)) || ((order < 0) && (strip_idx >= 0));
       strip_idx += order)
   {
-#ifdef RAINBOW
-    pLeds[strip_idx][0]         = random(0, 0xFFFFFF);
-    pLeds[strip_idx][led_cnt-1] = random(0, 0xFFFFFF);
-#else
-    pLeds[strip_idx][0] = color;
-    pLeds[strip_idx][led_cnt-1] = color;
-#endif
+    if(rainbow)
+    {
+      pLeds[strip_idx][0]         = random(0, 0xFFFFFF);
+      pLeds[strip_idx][led_cnt-1] = random(0, 0xFFFFFF);
+    }
+    else
+    {
+      pLeds[strip_idx][0] = color;
+      pLeds[strip_idx][led_cnt-1] = color;
+    }
+
     FastLED.show();
     delay(50);
   }
@@ -78,13 +99,17 @@ void openingEpicSides(CRGB_p *pLeds, unsigned int strip_cnt, unsigned int led_cn
         pLeds[strip_idx][led_idx-1] = CRGB::Black;
         pLeds[strip_idx][led_cnt-led_idx] = CRGB::Black;
       }
-#ifdef RAINBOW
-      pLeds[strip_idx][led_idx] = random(0, 0xFFFFFF);
-      pLeds[strip_idx][led_cnt-led_idx-1] = random(0, 0xFFFFFF);
-#else
-      pLeds[strip_idx][led_idx] = color;
-      pLeds[strip_idx][led_cnt-led_idx-1] = color;
-#endif
+
+      if(rainbow)
+      {
+        pLeds[strip_idx][led_idx] = random(0, 0xFFFFFF);
+        pLeds[strip_idx][led_cnt-led_idx-1] = random(0, 0xFFFFFF);
+      }
+      else
+      {
+        pLeds[strip_idx][led_idx] = color;
+        pLeds[strip_idx][led_cnt-led_idx-1] = color;
+      }
     }
     FastLED.show();
     if(led_idx == led_cnt/2) delay(300);
@@ -92,7 +117,7 @@ void openingEpicSides(CRGB_p *pLeds, unsigned int strip_cnt, unsigned int led_cn
   }
 }
 
-void openingEpicCenter(CRGB_p *pLeds, unsigned int strip_cnt, unsigned int led_cnt, CRGB color, int order)
+void openingEpicCenter(CRGB_p *pLeds, unsigned int strip_cnt, unsigned int led_cnt, CRGB color, int rainbow, int order)
 {
   int strip_idx = 0;
   int led_idx   = 0;
@@ -101,7 +126,14 @@ void openingEpicCenter(CRGB_p *pLeds, unsigned int strip_cnt, unsigned int led_c
       ((order > 0) && (strip_idx < strip_cnt)) || ((order < 0) && (strip_idx >= 0));
       strip_idx += order)
   {
-    pLeds[strip_idx][led_cnt/2 + led_cnt%2] = color;
+    if(rainbow)
+    {
+      pLeds[strip_idx][led_cnt/2 + led_cnt%2] = random(0, 0xFFFFFF);
+    }
+    else
+    {
+      pLeds[strip_idx][led_cnt/2 + led_cnt%2] = color;
+    }
     FastLED.show();
     delay(50);
   }
@@ -110,15 +142,23 @@ void openingEpicCenter(CRGB_p *pLeds, unsigned int strip_cnt, unsigned int led_c
   {
     for(strip_idx = 0; strip_idx < strip_cnt; strip_idx++)
     {
-      pLeds[strip_idx][led_cnt/2 - led_idx] = color;
-      pLeds[strip_idx][led_cnt/2 + led_idx] = color;
+      if(rainbow)
+      {
+        pLeds[strip_idx][led_cnt/2 - led_idx] = random(0, 0xFFFFFF);;
+        pLeds[strip_idx][led_cnt/2 + led_idx] = random(0, 0xFFFFFF);;
+      }
+      else
+      {
+        pLeds[strip_idx][led_cnt/2 - led_idx] = color;
+        pLeds[strip_idx][led_cnt/2 + led_idx] = color;
+      }
     }
     FastLED.show();
     delay(7);
   }
 }
 
-void openingCenter(CRGB_p *pLeds, unsigned int strip_cnt, unsigned int led_cnt, CRGB color, int order)
+void openingCenter(CRGB_p *pLeds, unsigned int strip_cnt, unsigned int led_cnt, CRGB color, int rainbow, int order)
 {
   int strip_idx = 0;
   int led_idx   = 0;
@@ -127,13 +167,20 @@ void openingCenter(CRGB_p *pLeds, unsigned int strip_cnt, unsigned int led_cnt, 
       ((order > 0) && (strip_idx < strip_cnt)) || ((order < 0) && (strip_idx >= 0));
       strip_idx += order)
   {
-    pLeds[strip_idx][led_cnt/2 + led_cnt%2] = color;
+    if(rainbow)
+    {
+      pLeds[strip_idx][led_cnt/2 + led_cnt%2] = random(0, 0xFFFFFF);
+    }
+    else
+    {
+      pLeds[strip_idx][led_cnt/2 + led_cnt%2] = color;
+    }
     FastLED.show();
     delay(50);
   }
 }
 
-void openingCone(CRGB_p *pLeds, unsigned int strip_cnt, unsigned int led_cnt, CRGB color, int order)
+void openingCone(CRGB_p *pLeds, unsigned int strip_cnt, unsigned int led_cnt, CRGB color, int rainbow, int order)
 {
   int  strip_idx = 0;
   int  led_idx   = 0;
@@ -148,18 +195,48 @@ void openingCone(CRGB_p *pLeds, unsigned int strip_cnt, unsigned int led_cnt, CR
     offset = cone_idx * ((led_cnt - 1) / (2 * (strip_cnt - 1)));
     for(led_idx = 0; led_idx < led_cnt - 2 * offset; led_idx++)
     {
-#ifdef RAINBOW
-      (pLeds[strip_idx] + offset)[led_idx] = random(0, 0xFFFFFF);
-#else
-      (pLeds[strip_idx] + offset)[led_idx] = color;
-#endif
+      if(rainbow)
+      {
+        (pLeds[strip_idx] + offset)[led_idx] = random(0, 0xFFFFFF);
+      }
+      else
+      {
+        (pLeds[strip_idx] + offset)[led_idx] = color;
+      }
     }
     FastLED.show();
     delay(50);
   }
 }
 
-void openingSides(CRGB_p *pLeds, unsigned int strip_cnt, unsigned int led_cnt, CRGB color, int order)
+void openingTree(CRGB_p *pLeds, unsigned int strip_cnt, unsigned int led_cnt, CRGB color, int rainbow, int order)
+{
+  int  strip_idx = 0;
+  int  led_idx   = 0;
+  uint offset    = 0;
+
+  for(strip_idx = (order > 0) ? 0 : strip_cnt - 1;
+      ((order > 0) && (strip_idx < strip_cnt)) || ((order < 0) && (strip_idx >= 0));
+      strip_idx += order)
+  {
+    offset = strip_idx * ((led_cnt - 1) / (2 * (strip_cnt - 1)));
+    for(led_idx = 0; led_idx < led_cnt - 2 * offset; led_idx++)
+    {
+      if(rainbow)
+      {
+        (pLeds[strip_idx] + offset)[led_idx] = random(0, 0xFFFFFF);
+      }
+      else
+      {
+        (pLeds[strip_idx] + offset)[led_idx] = color;
+      }
+    }
+    FastLED.show();
+    delay(50);
+  }
+}
+
+void openingSides(CRGB_p *pLeds, unsigned int strip_cnt, unsigned int led_cnt, CRGB color, int rainbow, int order)
 {
   int strip_idx = 0;
   int led_idx   = 0;
@@ -169,19 +246,22 @@ void openingSides(CRGB_p *pLeds, unsigned int strip_cnt, unsigned int led_cnt, C
       ((order > 0) && (strip_idx < strip_cnt)) || ((order < 0) && (strip_idx >= 0));
       strip_idx += order)
   {
-#ifdef RAINBOW
-    pLeds[strip_idx][0]         = random(0, 0xFFFFFF);
-    pLeds[strip_idx][led_cnt-1] = random(0, 0xFFFFFF);
-#else
-    pLeds[strip_idx][0] = color;
-    pLeds[strip_idx][led_cnt-1] = color;
-#endif
+    if(rainbow)
+    {
+      pLeds[strip_idx][0] = random(0, 0xFFFFFF);
+      pLeds[strip_idx][led_cnt-1] = random(0, 0xFFFFFF);
+    }
+    else
+    {
+      pLeds[strip_idx][0] = color;
+      pLeds[strip_idx][led_cnt-1] = color;
+    }
     FastLED.show();
     delay(50);
   }
 }
 
-void openingCascade(CRGB_p *pLeds, unsigned int strip_cnt, unsigned int led_cnt, CRGB color, int order)
+void openingCascade(CRGB_p *pLeds, unsigned int strip_cnt, unsigned int led_cnt, CRGB color, int rainbow, int order)
 {
   int step_idx  = 0;
   int strip_idx = 0;
@@ -196,11 +276,14 @@ void openingCascade(CRGB_p *pLeds, unsigned int strip_cnt, unsigned int led_cnt,
     {
       for(led_idx = 0; led_idx < led_cnt; led_idx++)
       {
-#ifdef RAINBOW
-        pLeds[strip_idx][led_idx] = random(0, 0xFFFFFF);
-#else
-        pLeds[strip_idx][led_idx] = color;
-#endif
+        if(rainbow)
+        {
+          pLeds[strip_idx][led_idx] = random(0, 0xFFFFFF);
+        }
+        else
+        {    
+          pLeds[strip_idx][led_idx] = color;
+        }
       }
       FastLED.show();
       if(((order < 0) && (strip_idx < strip_cnt - step_idx - 1)) ||
@@ -216,7 +299,7 @@ void openingCascade(CRGB_p *pLeds, unsigned int strip_cnt, unsigned int led_cnt,
   }
 }
 
-void openingStar(CRGB_p *pLeds, unsigned int strip_cnt, unsigned int led_cnt, CRGB color)
+void openingStar(CRGB_p *pLeds, unsigned int strip_cnt, unsigned int led_cnt, CRGB color, int rainbow)
 {
   int index = 0;
   uint led = 0;
@@ -229,11 +312,14 @@ void openingStar(CRGB_p *pLeds, unsigned int strip_cnt, unsigned int led_cnt, CR
       led = random(0, strip_cnt*led_cnt);
     } while(pLeds[led / led_cnt][led % led_cnt]);
 
-#ifdef RAINBOW
-    pLeds[led / led_cnt][led % led_cnt] = random(0, 0xFFFFFF);
-#else
-    pLeds[led / led_cnt][led % led_cnt] = color;
-#endif
+    if(rainbow)
+    {
+      pLeds[led / led_cnt][led % led_cnt] = random(0, 0xFFFFFF);
+    }
+    else
+    {
+      pLeds[led / led_cnt][led % led_cnt] = color;
+    }
     FastLED.show();
 #if 0
     if(index < strip_cnt*led_cnt/10) delay(80);
@@ -244,7 +330,7 @@ void openingStar(CRGB_p *pLeds, unsigned int strip_cnt, unsigned int led_cnt, CR
   }
 }
 
-void constellation(CRGB_p *pLeds, unsigned int strip_cnt, unsigned int led_cnt, CRGB color)
+void constellation(CRGB_p *pLeds, unsigned int strip_cnt, unsigned int led_cnt, CRGB color, int rainbow)
 {
   static int index = 0;
   uint led_idx = 0;
@@ -256,12 +342,18 @@ void constellation(CRGB_p *pLeds, unsigned int strip_cnt, unsigned int led_cnt, 
     led = random(0, strip_cnt*led_cnt);
   } while(pLeds[led / led_cnt][led % led_cnt] != (CRGB)0x000000
           && led_idx++ < strip_cnt * led_cnt);
-  if(led_idx >= strip_cnt * led_cnt) solidcolor(pLeds, strip_cnt, led_cnt, CRGB::Black);
-#ifdef RAINBOW
-  fadeIn(pLeds, led / led_cnt, led % led_cnt, random(0, 0xFFFFFF));
-#else
-  fadeIn(pLeds, led / led_cnt, led % led_cnt, color);
-#endif
+  if(led_idx >= strip_cnt * led_cnt)
+  {
+    solidcolor(pLeds, strip_cnt, led_cnt, CRGB::Black);
+  }
+  if(rainbow)
+  {
+    fadeIn(pLeds, led / led_cnt, led % led_cnt, random(0, 0xFFFFFF));
+  }
+  else
+  {
+    fadeIn(pLeds, led / led_cnt, led % led_cnt, color);
+  }
   index++;
   if(index >= strip_cnt*led_cnt/2)
   {

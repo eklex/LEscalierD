@@ -1,3 +1,20 @@
+/**
+ * This file is part of the LEscalierD project (https://github.com/eklex/LEscalierD).
+ * Copyright (C) 2016, 2020  Alexandre Boni.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, version 3.
+ *
+ * This program is distributed in the hope that it will be useful, but
+ * WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ * General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ */
+
 #ifndef __ANIMATION_H__
 #define __ANIMATION_H__
 
@@ -9,12 +26,13 @@
 #define ANIMA_ORDER      (1 << 3)
 #define ANIMA_RAINBOW    (1 << 4)
 
-typedef void (*anima_func_wo_t)(CRGB_p*, unsigned int, unsigned int, CRGB, int);
+typedef void (*anima_func_w2_t)(CRGB_p*, unsigned int, unsigned int, CRGB, int, int);
+typedef void (*anima_func_w1_t)(CRGB_p*, unsigned int, unsigned int, CRGB, int);
 typedef void (*anima_func_no_t)(CRGB_p*, unsigned int, unsigned int, CRGB);
 
 typedef struct _anima_def_t {
   String          name;
-  anima_func_wo_t func;
+  anima_func_w2_t func;
   union {
     uint8_t raw;
     struct {
@@ -33,6 +51,7 @@ typedef struct _light_mode_t {
   uint32_t   color;
   uint8_t    random;
   uint8_t    brightness;
+  uint8_t    rainbow;
 } light_mode_t;
 
 typedef struct _light_control_t {
@@ -54,6 +73,6 @@ extern main_control_t main_mode;
 
 const anima_def_t* getAnimation(String name);
 const anima_def_t* getAnimation(unsigned int index);
-void runAnimation(const anima_def_t *animation, const led_strip_t *strip, uint32_t color, int order);
+void runAnimation(const anima_def_t *animation, const led_strip_t *strip, uint32_t color, int rainbow, int order);
 
 #endif /* __ANIMATION_H__ */

@@ -1,21 +1,38 @@
+/**
+ * This file is part of the LEscalierD project (https://github.com/eklex/LEscalierD).
+ * Copyright (C) 2016, 2020  Alexandre Boni.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, version 3.
+ *
+ * This program is distributed in the hope that it will be useful, but
+ * WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ * General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ */
+
 #include "ad7887.h"
 
 /**
  * Define hardware specs
  */
-#define AD7887_REF_DIS		(1 << 5)	/* on-chip reference disable */
-#define AD7887_DUAL		    (1 << 4)	/* dual-channel mode */
-#define AD7887_CH_AIN1		(1 << 3)	/* convert on channel 1, DUAL=1 */
-#define AD7887_CH_AIN0		(0 << 3)	/* convert on channel 0, DUAL=0,1 */
-#define AD7887_PM_MODE1		(0)	/* CS based shutdown */
-#define AD7887_PM_MODE2		(1)	/* full on */
-#define AD7887_PM_MODE3		(2)	/* auto shutdown after conversion */
-#define AD7887_PM_MODE4		(3)	/* standby mode */
+#define AD7887_REF_DIS      (1 << 5)  /* on-chip reference disable */
+#define AD7887_DUAL         (1 << 4)  /* dual-channel mode */
+#define AD7887_CH_AIN1      (1 << 3)  /* convert on channel 1, DUAL=1 */
+#define AD7887_CH_AIN0      (0 << 3)  /* convert on channel 0, DUAL=0,1 */
+#define AD7887_PM_MODE1     (0)       /* CS based shutdown */
+#define AD7887_PM_MODE2     (1)       /* full on */
+#define AD7887_PM_MODE3     (2)       /* auto shutdown after conversion */
+#define AD7887_PM_MODE4     (3)       /* standby mode */
 
-#define ADC_CTL_REG       (AD7887_PM_MODE1 | AD7887_CH_AIN0 | AD7887_REF_DIS)
+#define ADC_CTL_REG         (AD7887_PM_MODE1 | AD7887_CH_AIN0 | AD7887_REF_DIS)
 
 /**
- * Define private constantes
+ * Define private constants
  */
 static const float        adc_th_value   = 3500;
 static const unsigned int adc_th_len     = 30;
@@ -144,8 +161,8 @@ static void adc_capture(void)
   /* Read ADC value */
   adc_val = adc_read(adc_idx);
   /* Process ADC value */
-  detect  = adc_process(&adc[adc_idx], adc_val);
-  if(detect == 1)
+  detect = adc_process(&adc[adc_idx], adc_val);
+  if(1 == detect)
   {
     adc_detect_flag |= (1 << adc_idx);
   }

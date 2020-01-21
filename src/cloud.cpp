@@ -1,27 +1,46 @@
+/**
+ * This file is part of the LEscalierD project (https://github.com/eklex/LEscalierD).
+ * Copyright (C) 2016, 2020  Alexandre Boni.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, version 3.
+ *
+ * This program is distributed in the hope that it will be useful, but
+ * WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ * General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ */
+
 #include "lescalierd.h"
 #include "animation.h"
 
 static const anima_def_t animation_list[] =
 {
-  { "epicsides",  (anima_func_wo_t)openingEpicSides,  ANIMA_OPEN | ANIMA_ORDER | ANIMA_RAINBOW },
-  { "epiccenter", (anima_func_wo_t)openingEpicCenter, ANIMA_OPEN | ANIMA_ORDER | ANIMA_RAINBOW },
-  { "center",     (anima_func_wo_t)openingCenter,     ANIMA_OPEN | ANIMA_ORDER | ANIMA_RAINBOW },
-  { "cone",       (anima_func_wo_t)openingCone,       ANIMA_OPEN | ANIMA_ORDER | ANIMA_RAINBOW },
-  { "sides",      (anima_func_wo_t)openingSides,      ANIMA_OPEN | ANIMA_ORDER | ANIMA_RAINBOW },
-  { "cascade",    (anima_func_wo_t)openingCascade,    ANIMA_OPEN | ANIMA_ORDER | ANIMA_RAINBOW },
-  { "star",       (anima_func_wo_t)openingStar,       ANIMA_OPEN | ANIMA_CLOSE | ANIMA_RAINBOW },
-  { "line",       (anima_func_wo_t)openingLine,       ANIMA_OPEN | ANIMA_CLOSE },
-  { "const",      (anima_func_wo_t)constellation,     ANIMA_CONTINOUS },
-  { "solid",      (anima_func_wo_t)solidcolor,        ANIMA_OPEN },
+  { "epicsides",  (anima_func_w2_t)openingEpicSides,  ANIMA_OPEN | ANIMA_ORDER | ANIMA_RAINBOW },
+  { "epiccenter", (anima_func_w2_t)openingEpicCenter, ANIMA_OPEN | ANIMA_ORDER | ANIMA_RAINBOW },
+  { "center",     (anima_func_w2_t)openingCenter,     ANIMA_OPEN | ANIMA_ORDER | ANIMA_RAINBOW },
+  { "cone",       (anima_func_w2_t)openingCone,       ANIMA_OPEN | ANIMA_ORDER | ANIMA_RAINBOW },
+  { "sides",      (anima_func_w2_t)openingSides,      ANIMA_OPEN | ANIMA_ORDER | ANIMA_RAINBOW },
+  { "cascade",    (anima_func_w2_t)openingCascade,    ANIMA_OPEN | ANIMA_ORDER | ANIMA_RAINBOW },
+  { "star",       (anima_func_w2_t)openingStar,       ANIMA_OPEN | ANIMA_CLOSE | ANIMA_RAINBOW },
+  { "tree",       (anima_func_w2_t)openingTree,       ANIMA_OPEN | ANIMA_ORDER | ANIMA_RAINBOW },
+  { "line",       (anima_func_w2_t)openingLine,       ANIMA_OPEN | ANIMA_CLOSE },
+  { "const",      (anima_func_w2_t)constellation,     ANIMA_CONTINOUS | ANIMA_RAINBOW },
+  { "solid",      (anima_func_w2_t)solidcolor,        ANIMA_OPEN },
 };
 
 main_control_t main_mode = {
   {                   /** light mode ********************/
     Candle,            /* temperature */
-    30,                /* delay */
+    45,                /* delay */
     0xffffff,          /* color value */
     1,                 /* random color */
-    50,                /* brightness */
+    80,                /* brightness */
+    0,                 /* rainbow */
   },
   {                  /** light control ******************/
     0,                /* manual */
@@ -53,13 +72,14 @@ void publishCmd()
     default:              temp = 0; break;
   }
   //memset(running_cmd, 0, sizeof(running_cmd));
-  sprintf(running_cmd, "effect:%s,color:%s,temp:%d,bright:%d,delay:%d,trigger:%d",
+  sprintf(running_cmd, "effect:%s,color:%s,temp:%d,bright:%d,delay:%d,trigger:%d,rainbow:%d",
           main_mode.animation->name.c_str(),
           color,
           temp,
           main_mode.light.brightness,
           main_mode.light.delay,
-          main_mode.control.manual);
+          main_mode.control.manual,
+          main_mode.light.rainbow);
 }
 
 int processCloudCmd(String cmd)
@@ -121,7 +141,7 @@ int processCloudCmd(String cmd)
   else if(strstr(cmd, "color:") != NULL)
   {
     pstr = strchr(cmd, ':') + 1;
-    if(strstr(cmd, "random") != NULL) main_mode.light.random = 1;
+    if(strstr(pstr, "random") != NULL) main_mode.light.random = 1;
     else
     {
       main_mode.light.random = 0;
@@ -139,14 +159,20 @@ int processCloudCmd(String cmd)
     }
     retVal = 6;
   }
+  else if(strstr(cmd, "rainbow:") != NULL)
+  {
+    pstr = strchr(cmd, ':') + 1;
+    main_mode.light.rainbow = (uint8_t)strtol(pstr, NULL, 0);
+    retVal = 7;
+  }
   else if(cmd == "reset")
   {
     System.reset();
-    retVal = 7;
+    retVal = 8;
   }
   else if(cmd == "pull")
   {
-    retVal = 8;
+    retVal = 9;
   }
   publishCmd();
   return retVal;
@@ -174,7 +200,7 @@ const anima_def_t* getAnimation(unsigned int index)
   return NULL;
 }
 
-void runAnimation(const anima_def_t *animation, const led_strip_t *strip, uint32_t color, int order)
+void runAnimation(const anima_def_t *animation, const led_strip_t *strip, uint32_t color, int rainbow, int order)
 {
   /* Sanity check */
   if(animation == NULL || strip == NULL)
@@ -182,9 +208,17 @@ void runAnimation(const anima_def_t *animation, const led_strip_t *strip, uint32
     return;
   }
 
-  if(animation->support.order)
+  if(animation->support.order && animation->support.rainbow)
   {
-    ((anima_func_wo_t)animation->func)(strip->leds, strip->strip_cnt, strip->led_cnt, color, order);
+    ((anima_func_w2_t)animation->func)(strip->leds, strip->strip_cnt, strip->led_cnt, color, rainbow, order);
+  }
+  else if(animation->support.rainbow)
+  {
+    ((anima_func_w1_t)animation->func)(strip->leds, strip->strip_cnt, strip->led_cnt, color, rainbow);
+  }
+  else if(animation->support.order)
+  {
+    ((anima_func_w1_t)animation->func)(strip->leds, strip->strip_cnt, strip->led_cnt, color, order);
   }
   else
   {
